@@ -1,0 +1,29 @@
+{
+  "schema": "2.0",
+  "slug": "acme-botblocker-sample",
+  "name": "ACME BotBlocker Sample Add-on",
+  "version": "1.0.0",
+  "requires_core": "1.6.20",
+  "requires_php": "7.4",
+  "author": "ACME Security",
+  "description": "Demonstrates a BotBlocker Add-on API v2 package with a polished settings help panel, safe options, lifecycle callbacks, icon, scripts, and a response header.",
+  "main": "acme-botblocker-sample.php",
+  "core": "inc/core.php",
+  "settings": {
+    "view": "inc/settings.php",
+    "option": "acme_bbcs_sample_settings",
+    "sanitize": "acme_bbcs_sample_sanitize_settings"
+  },
+  "lifecycle": {
+    "activate": "acme_bbcs_sample_activate",
+    "deactivate": "acme_bbcs_sample_deactivate",
+    "delete": "acme_bbcs_sample_delete"
+  },
+  "features": [
+    "sample_response_header"
+  ],
+  "assets": {
+    "icon": "assets/icon.svg",
+    "readme": "readme.txt"
+  }
+}

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="ACME BotBlocker Sample Add-on">
+  <rect width="128" height="128" rx="20" fill="#0d6efd"/>
+  <path d="M64 18 102 32v26c0 25-15 46-38 56-23-10-38-31-38-56V32l38-14Z" fill="#ffffff" opacity="0.95"/>
+  <path d="M45 64h38M45 78h26M45 50h38" fill="none" stroke="#0d6efd" stroke-width="8" stroke-linecap="round"/>
+</svg>
