@@ -20,6 +20,16 @@ The settings view follows the native BotBlocker pattern: icon first, short help 
 
 Create a ZIP that contains the acme-botblocker-sample root folder. Upload it from BotBlocker -> Add-ons -> Upload ZIP. Activate it from the Installed tab.
 
+Validate before upload:
+
+php ../../tools/validate-addon.php ./acme-botblocker-sample
+
+Package from the developer kit root:
+
+./tools/package-addon.ps1 -AddonPath ./examples/acme-botblocker-sample -DestinationPath ./dist/acme-botblocker-sample.zip
+
+After activation, open BotBlocker -> Tools and save the sample settings.
+
 == Changelog ==
 
 = 1.0.0 =

@@ -20,7 +20,7 @@ BotBlocker validates uploaded add-ons before installing them.
 - Upload installs the add-on inactive by default.
 - Replacing an existing add-on uses backup and rollback handling.
 
-Archive the folder itself. Do not select all files inside the folder and compress them directly. The working Cookie Alert package was installed successfully because `bbcs-cookie-alert.zip` opened to `bbcs-cookie-alert/`, not to loose files.
+Archive the folder itself. Do not select all files inside the folder and compress them directly. A correct package opens to `{slug}/`, not to loose files.
 
 ## Correct package layout
 
@@ -46,7 +46,15 @@ Do not ZIP only the files inside the folder. ZIP the folder itself. When you ope
 
 ## PowerShell packaging
 
-Run this command from the directory that contains the add-on folder:
+Preferred command from the developer kit root:
+
+```powershell
+.\tools\package-addon.ps1 -AddonPath .\examples\acme-botblocker-sample -DestinationPath .\dist\acme-botblocker-sample.zip
+```
+
+The script validates the source folder, builds a one-root-folder ZIP, and validates the ZIP when PHP is available.
+
+Manual command from the directory that contains the add-on folder:
 
 ```powershell
 Compress-Archive -Path .\acme-botblocker-sample -DestinationPath .\acme-botblocker-sample.zip -Force
@@ -59,6 +67,22 @@ Run this command from the directory that contains the add-on folder:
 ```bash
 zip -r acme-botblocker-sample.zip acme-botblocker-sample
 ```
+
+## Validation
+
+Validate a folder:
+
+```powershell
+php .\tools\validate-addon.php .\examples\acme-botblocker-sample
+```
+
+Validate a ZIP:
+
+```powershell
+php .\tools\validate-addon.php .\dist\acme-botblocker-sample.zip
+```
+
+Fix all validator errors before upload. Treat warnings as review items; a warning may be acceptable for a deliberate package, but it should not be ignored.
 
 ## Upload flow
 
@@ -77,7 +101,7 @@ Settings pages are displayed only for active add-ons that have `settings.view`. 
 ## Image and icon rules
 
 - Declare v2 icons with `assets.icon`, for example `assets/icon.svg`.
-- The value may point to any safe package-relative image path, including a root icon such as `bbcs-cookie-alert.svg`.
+- The value may point to any safe package-relative image path, including a root icon such as `{slug}.svg`.
 - Preferred formats: `SVG` and transparent `PNG`.
 - Acceptable browser image formats: `WebP`, `JPG`, `JPEG`, and `GIF` when intentionally used.
 - Keep icons square and small, for example `128x128` or `256x256`.
@@ -95,7 +119,7 @@ Recommended pattern:
 - Then: `.bbcs-info-footer` with a question icon and useful links.
 - Remaining columns: grouped settings with `.bbcs_settings_h3` and BotBlocker input classes.
 
-Cookie Alert text example:
+Help text example:
 
 ```text
 Displays a lightweight first-party cookie notice for visitors and stores consent locally in a BotBlocker-named cookie.
@@ -103,7 +127,7 @@ Displays a lightweight first-party cookie notice for visitors and stores consent
 Use it for simple privacy notices where no external consent platform is required. Configure message text, policy link, button label, theme, position, and optional CSS.
 ```
 
-Cookie Alert links example:
+Feature-specific footer links example:
 
 - Cookie guidance: `https://gdpr.eu/cookies/`
 - WordPress privacy: `https://wordpress.org/documentation/article/settings-privacy-screen/`
@@ -112,6 +136,8 @@ Cookie Alert links example:
 ## Release checklist
 
 - Manifest slug matches the root folder.
+- Source folder passes `tools/validate-addon.php`.
+- ZIP passes `tools/validate-addon.php`.
 - Manifest `assets.icon` points to an existing package-relative browser image file.
 - Add-ons card `description` is clear and not too short.
 - Settings view starts with a BotBlocker-style help block: icon, text, and links.
@@ -130,6 +156,7 @@ Cookie Alert links example:
 - User input is sanitized.
 - Capability and nonce checks are used for custom admin actions.
 - Package was installed, activated, deactivated, deleted, and reinstalled on a local WordPress site.
+- Declared static assets return HTTP 200 in the target WordPress environment.
 
 ## Common upload errors
 

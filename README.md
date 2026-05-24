@@ -2,117 +2,141 @@
 
 ![BotBlocker Security banner](https://ps.w.org/botblocker-security/assets/banner-1544x500.png?rev=3405280)
 
-A repository-ready manual for building, packaging, testing, and shipping third-party add-ons for BotBlocker Security, an advanced proactive protection plugin for WordPress.
+This repository is the working manual, template, validator, and AI instruction pack for building third-party add-ons for BotBlocker Security.
 
-## What is BotBlocker Security
+BotBlocker Security is a WordPress anti-bot firewall and proactive protection plugin. It protects login flows, XML-RPC, REST, comments, file requests, payment callbacks, and high-risk traffic with request checks, rules, CAPTCHA, logs, early-init protection, and add-on based extensions.
 
-BotBlocker Security is a modern WordPress security plugin and anti-bot firewall built for proactive site protection. It analyzes requests before they become a WordPress workload, blocks malicious automation, reduces attack noise, and helps site owners defend login forms, XML-RPC, REST endpoints, comment flows, file requests, payment callbacks, and high-risk traffic patterns.
+## Baseline
 
-The plugin is designed for real production traffic, not only dashboard hardening. BotBlocker combines a Web Application Firewall, early-init protection, IP and ASN intelligence, fake crawler detection, browser and protocol checks, configurable CAPTCHA layers, two-factor authentication support, security logs, live traffic monitoring, payment gateway bypass rules, and add-on based premium capabilities.
+- BotBlocker Security: `1.6.20+`
+- WordPress: `5.0+`, tested up to `7.0`
+- PHP: `7.4+`
+- Add-on format: Add-on API v2 with `bbcs-addon.json`
 
-When early-init protection is enabled, BotBlocker can run before the active theme and most plugins load. This lets it stop abusive requests at the front gate, reduce server load during attacks, and keep WordPress available for real visitors. BotBlocker is also built with privacy in mind: protection is based on technical request parameters rather than visitor profiling.
+Some bundled first-party BotBlocker add-ons declare `requires_core: 1.6.15`. That is internal compatibility history. New third-party add-ons should use `1.6.20+` unless they are explicitly tested against an older BotBlocker build.
 
-## Why this kit exists
+## What Is Inside
 
-BotBlocker Security 1.6.20 introduced Add-on API v2, a manifest-first package format designed so external developers can build extensions without editing BotBlocker core files. Add-ons are uploaded as ZIP packages from the BotBlocker admin screen, installed into the protected runtime add-ons directory, and activated by the site administrator after review.
+- `examples/acme-botblocker-sample`: canonical v2 sample add-on.
+- `docs/botblocker-runtime-contract.md`: how BotBlocker scans, installs, activates, and loads add-ons.
+- `docs/addon-api-v2.md`: manifest, settings, lifecycle, feature providers, assets.
+- `docs/settings-contract.md`: exact settings save contract for third-party v2 add-ons.
+- `docs/settings-ui-patterns.md`: BotBlocker settings tab layout, help block, field classes, and field examples.
+- `docs/lifecycle-and-features.md`: lifecycle callbacks and feature provider rules.
+- `docs/code-quality-standard.md`: required security and code quality bar.
+- `docs/packaging-and-upload.md`: ZIP shape, upload flow, common upload errors.
+- `docs/testing.md`: static, package, WordPress, lifecycle, asset, multisite, and security tests.
+- `docs/compatibility-matrix.md`: kit/core/first-party/runtime compatibility comparison.
+- `docs/known-core-contract-gaps.md`: known implementation gaps to verify or fix in BotBlocker core.
+- `tools/validate-addon.php`: static validator for folders and ZIP packages.
+- `tools/package-addon.ps1`: PowerShell packager that builds a correct one-root-folder ZIP.
+- `ai/botblocker-addon-skill/SKILL.md`: AI instructions for creating/reviewing add-ons.
 
-This kit documents that add-on contract and provides a working sample package so agencies, freelancers, vendors, and AI coding assistants can create BotBlocker add-ons with predictable structure, safer packaging, and clear compatibility metadata.
+## Critical Runtime Model
 
-## What is inside
+BotBlocker does not load third-party add-ons from this repository and does not load them directly from `plugin/wp-content/plugins/botblocker-security/addons`.
 
-- `docs/addon-api-v2.md`: manifest, runtime model, settings, lifecycle callbacks, and provider features.
-- `docs/packaging-and-upload.md`: ZIP layout, package rules, upload flow, and release checklist.
-- `docs/links-and-assets.md`: public BotBlocker links and WordPress.org image assets.
-- `examples/acme-botblocker-sample`: a working add-on package with settings, lifecycle callbacks, and visible runtime behavior.
-- `ai/botblocker-addon-skill/SKILL.md`: an AI skill for generating and reviewing BotBlocker add-ons.
+The real runtime flow is:
 
-## Requirements
+1. Developer builds a source folder named like the add-on slug.
+2. Developer creates a ZIP containing exactly that one root folder.
+3. Administrator uploads the ZIP in `BotBlocker -> Add-ons`.
+4. BotBlocker validates the ZIP and installs it into `wp-content/uploads/BotBlocker/addons/{slug}`.
+5. The add-on stays inactive until the administrator activates it.
+6. Active compatible add-ons are loaded from the runtime uploads directory.
 
-- BotBlocker Security `1.6.20` or newer.
-- WordPress `5.0` or newer. BotBlocker is tested up to WordPress `7.0`.
-- PHP `7.4` or newer.
-- A local WordPress development site for testing.
+Read `docs/botblocker-runtime-contract.md` before writing code.
 
-## Quick start
+## Fast Path For A New Add-on
 
-1. Copy `examples/acme-botblocker-sample` to your development workspace.
-2. Rename the folder, manifest slug, PHP prefixes, option names, and text domain.
-3. Implement the add-on behavior in `inc/core.php`.
-4. Update `bbcs-addon.json` with your final metadata.
-5. Create a ZIP that contains exactly one root folder.
-6. In WordPress admin, open `BotBlocker -> Add-ons`, click `Upload ZIP`, upload the package, then activate it from the Installed tab.
+1. Copy `examples/acme-botblocker-sample` to a new folder named with your final slug.
+2. Rename the folder, manifest `slug`, root PHP file, text domain, PHP function prefix, option name, handles, CSS classes, and JS globals.
+3. Define behavior in `inc/core.php`.
+4. Define admin controls in `inc/settings.php`.
+5. Declare every settings field under `settings.option`, for example `vendor_addon_settings[enabled]`.
+6. Implement the manifest-declared sanitizer.
+7. Implement lifecycle callbacks only when needed.
+8. Validate the source folder.
+9. Package it.
+10. Validate the ZIP.
+11. Upload it through BotBlocker admin and run the manual tests.
 
-PowerShell packaging command:
+## Validate
+
+From this kit root:
+
+```powershell
+php .\tools\validate-addon.php .\examples\acme-botblocker-sample
+```
+
+Validate a ZIP:
+
+```powershell
+php .\tools\validate-addon.php .\dist\acme-botblocker-sample.zip
+```
+
+## Package
+
+PowerShell:
+
+```powershell
+.\tools\package-addon.ps1 -AddonPath .\examples\acme-botblocker-sample -DestinationPath .\dist\acme-botblocker-sample.zip
+```
+
+Manual equivalent:
 
 ```powershell
 Compress-Archive -Path .\acme-botblocker-sample -DestinationPath .\acme-botblocker-sample.zip -Force
 ```
 
-Run the command from the directory that contains the add-on folder. Archive the folder itself, not only the files inside it. This is the same package shape used by the working `bbcs-cookie-alert` v2 add-on: the ZIP opens to one top-level folder, and that folder name equals the manifest `slug`.
+Run manual packaging from the directory that contains the add-on folder. Archive the folder itself, not the files inside it.
 
-## Package shape
+Correct ZIP:
 
 ```text
-acme-botblocker-sample/
-  index.php
-  bbcs-addon.json
-  acme-botblocker-sample.php
-  assets/
-    index.php
-    icon.svg
-    admin.js
-    frontend.js
-  inc/
-    index.php
-    core.php
-    settings.php
-  readme.txt
+acme-botblocker-sample.zip
+  acme-botblocker-sample/
+    bbcs-addon.json
+    acme-botblocker-sample.php
+    inc/core.php
+    inc/settings.php
+    assets/icon.svg
+    readme.txt
 ```
 
-The root folder name must match the manifest `slug`.
+Wrong ZIP:
 
-This is the recommended layout for new add-ons. BotBlocker does not require JavaScript or images to live specifically under `assets/`; it follows the package-relative paths declared in the manifest and PHP code. For example, the first working `bbcs-cookie-alert` v2 add-on uses a root icon path (`bbcs-cookie-alert.svg`) and a frontend script under `inc/`. The important rule is that every declared path must be relative, safe, inside the package, and present in the ZIP.
+```text
+acme-botblocker-sample.zip
+  bbcs-addon.json
+  inc/core.php
+```
 
-Recommended file roles:
-
-- `bbcs-addon.json`: BotBlocker Add-on API v2 manifest. This is the primary contract.
-- `{slug}.php`: root metadata file and optional bootstrap that includes `inc/core.php`.
-- `inc/core.php`: runtime hooks, lifecycle callbacks, settings defaults, sanitizers, and asset enqueue functions.
-- `inc/settings.php`: admin settings view rendered inside `BotBlocker -> Tools` when the add-on is active.
-- `assets/icon.svg`: add-on icon shown in the Add-ons UI.
-- `assets/admin.js`: JavaScript for BotBlocker admin screens.
-- `assets/frontend.js`: JavaScript for public frontend behavior.
-- `readme.txt`: package notes, installation, and changelog.
-- `index.php`: silence files for direct directory browsing protection.
-
-## Manifest fields
-
-Every v2 add-on must include `bbcs-addon.json` in the package root.
+## Minimal Manifest
 
 ```json
 {
   "schema": "2.0",
-  "slug": "acme-botblocker-sample",
-  "name": "ACME BotBlocker Sample Add-on",
+  "slug": "vendor-addon",
+  "name": "Vendor Add-on",
   "version": "1.0.0",
   "requires_core": "1.6.20",
   "requires_php": "7.4",
-  "author": "ACME Security",
-  "description": "Working sample add-on with settings, lifecycle callbacks, assets, and optional scripts.",
-  "main": "acme-botblocker-sample.php",
+  "author": "Vendor",
+  "description": "Adds a focused BotBlocker extension with configurable runtime behavior.",
+  "main": "vendor-addon.php",
   "core": "inc/core.php",
   "settings": {
     "view": "inc/settings.php",
-    "option": "acme_bbcs_sample_settings",
-    "sanitize": "acme_bbcs_sample_sanitize_settings"
+    "option": "vendor_addon_settings",
+    "sanitize": "vendor_addon_sanitize_settings"
   },
   "lifecycle": {
-    "activate": "acme_bbcs_sample_activate",
-    "deactivate": "acme_bbcs_sample_deactivate",
-    "delete": "acme_bbcs_sample_delete"
+    "activate": "vendor_addon_activate",
+    "delete": "vendor_addon_delete"
   },
   "features": [
-    "sample_response_header"
+    "vendor_feature_provider"
   ],
   "assets": {
     "icon": "assets/icon.svg",
@@ -123,245 +147,161 @@ Every v2 add-on must include `bbcs-addon.json` in the package root.
 
 Required fields:
 
-- `schema`: manifest schema, currently `2.0`.
-- `slug`: sanitized package slug. It must match the root folder.
-- `name`: add-on name shown in BotBlocker admin.
-- `version`: add-on version.
-- `requires_core`: minimum BotBlocker Security version.
-- `core`: relative path to the runtime PHP file.
+- `schema`
+- `slug`
+- `name`
+- `version`
+- `requires_core`
+- `core`
 
-Recommended fields:
+Quality-required fields for normal add-ons:
 
-- `requires_php`: minimum PHP version.
-- `author`: vendor or author name.
-- `description`: short admin UI description.
-- `main`: root PHP metadata file.
-- `settings.view`: settings view included in `BotBlocker -> Tools`.
-- `settings.option`: WordPress option name used for this add-on settings array.
-- `settings.sanitize`: callable sanitizer used before `update_option()`.
-- `lifecycle.file`: optional relative file loaded before lifecycle callbacks.
-- `lifecycle.install`: optional callback for package install.
-- `lifecycle.activate`: callback called when the add-on is activated.
-- `lifecycle.deactivate`: callback called when the add-on is deactivated.
-- `lifecycle.delete`: callback called before/while the add-on is removed.
-- `lifecycle.update`: optional callback for package replacement/update flows.
-- `lifecycle.load`: optional callback for active add-on load events.
-- `lifecycle.health_check`: optional callback for diagnostic flows.
-- `features`: capability names exposed by the active add-on.
-- `assets.icon`: relative icon path used by the Add-ons UI.
-- `assets.readme`: relative readme path.
+- `requires_php`
+- `description`
+- `main`
+- `settings.view` when an admin UI exists
+- `settings.option` when settings are saved
+- `settings.sanitize` when settings are saved
+- `assets.icon`
+- `assets.readme`
 
-The `description` field is the text shown on the Add-ons card. Keep it short but useful. A good card description explains what the add-on does, where it acts, and what the admin can configure.
+## Settings Contract
 
-Example:
+Third-party v2 settings must use the manifest option array:
 
-```text
-Displays a lightweight first-party cookie consent banner with editable notice text, policy link, theme, position, and safe BotBlocker settings storage.
+```php
+<input type="hidden" name="vendor_addon_settings[enabled]" value="0">
+<input type="checkbox" name="vendor_addon_settings[enabled]" value="1">
 ```
 
-## Root plugin header
+Do not copy first-party legacy plain-field settings such as:
 
-The root PHP file should include WordPress-style metadata for compatibility, debugging, and human review.
+```php
+<input type="checkbox" name="disable_emojis" value="1">
+```
+
+Those fields work only because BotBlocker core has hardcoded first-party save logic. Third-party add-ons are saved by `bbcs_save_active_addon_settings_from_post()` through `settings.option`.
+
+## Settings UI Pattern
+
+`settings.view` is rendered inside `BotBlocker -> Tools` as an add-on tab. It should start with a BotBlocker-style help block and then render grouped controls.
+
+Use this layout:
 
 ```php
 <?php
-/**
- * Plugin Name: ACME BotBlocker Sample Add-on
- * Description: Working sample package for BotBlocker Add-on API v2.
- * Version: 1.0.0
- * Author: ACME Security
- * Requires-Core: 1.6.20
- * Requires PHP: 7.4
- * Text Domain: acme-botblocker-sample
- * License: GPLv2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- */
-
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-require_once __DIR__ . '/inc/core.php';
-```
-
-Keep the manifest authoritative. Keep the root header aligned with the manifest so administrators can inspect packages quickly.
-
-Root header fields commonly used by BotBlocker add-ons:
-
-- `Plugin Name`: human-readable add-on name.
-- `Description`: short add-on description.
-- `Version`: add-on version.
-- `Author`: vendor or author name.
-- `Requires-Core`: minimum BotBlocker Security version.
-- `Requires PHP`: minimum PHP version.
-- `Text Domain`: translation text domain, usually the slug.
-- `Plugin URI`: optional public add-on page.
-- `Author URI`: optional author or vendor page.
-- `License`: optional package license.
-- `License URI`: optional license URL.
-
-## Icons
-
-Use `assets.icon` in the manifest for v2 add-ons:
-
-```json
-"assets": {
-  "icon": "assets/icon.svg",
-  "readme": "readme.txt"
-}
-```
-
-Icon recommendations:
-
-- Preferred formats: `SVG` or transparent `PNG`.
-- Also acceptable for browser-rendered UI icons: `WebP`, `JPG`, `JPEG`, and `GIF` when there is a real reason to use them.
-- Use a square canvas, for example `128x128` or `256x256`.
-- Keep the file inside the package, usually under `assets/`.
-- Use a relative path only. Do not use remote URLs or absolute paths.
-- Do not point the icon path to PHP, HTML, or a dynamic endpoint.
-- The icon is optional for v2, but strongly recommended for a polished Add-ons UI card.
-
-BotBlocker resolves the icon from `assets.icon` first. It also supports a top-level manifest `icon` field for compatibility. Legacy v1 packages use `{slug}.svg` or `{slug}.png` in the root folder. New packages should use the v2 `assets.icon` manifest field.
-
-## Settings and data saving
-
-BotBlocker saves active add-on settings from the Tools form. The save flow is:
-
-1. The add-on is active and declares `settings.option`.
-2. The settings view renders form fields named under that option array.
-3. The administrator clicks the BotBlocker Tools save button.
-4. BotBlocker reads `$_POST[settings.option]` for active add-ons only.
-5. BotBlocker includes the add-on `core` file when needed.
-6. BotBlocker calls `settings.sanitize` if callable.
-7. BotBlocker stores the sanitized array with `update_option(settings.option, $clean)`.
-
-Settings field names must match the option declared in the manifest:
-
-```php
-<input type="hidden" name="acme_bbcs_sample_settings[enabled]" value="0">
-<input type="checkbox" name="acme_bbcs_sample_settings[enabled]" value="1">
-<input type="text" name="acme_bbcs_sample_settings[header_value]" value="<?php echo esc_attr( $settings['header_value'] ?? '' ); ?>">
-```
-
-Use activation callbacks to create defaults and delete callbacks to clean up package-owned options when that is the intended behavior.
-
-## Settings help block
-
-The settings page for an active add-on is rendered from `settings.view` inside `BotBlocker -> Tools`, under a tab named after the add-on. Put the add-on help block at the top of that settings view, before controls.
-
-Use the native BotBlocker pattern: first an icon, then one or two concise help paragraphs, then footer links. This is the same pattern used by first-party add-ons such as Cookie Alert and Malware Scanner.
-
-```php
+$settings = function_exists( 'vendor_addon_settings' ) ? vendor_addon_settings() : array();
+$option   = 'vendor_addon_settings';
+$icon_url = function_exists( 'vendor_addon_asset_url' ) ? vendor_addon_asset_url( 'assets/icon.svg' ) : '';
+?>
 <div class="row">
-  <div class="col-xxl-3 col-xl-6 col-lg-6 col-sm-12 col-md-12 bbcs-info-column">
-    <div class="bbcs-info-inner">
-      <img src="<?php echo esc_url( $icon_url ); ?>" alt="" class="img-fluid bbcs-info-image mb-3">
-      <p class="bbcs-info-text"><?php esc_html_e( 'Explain what the add-on does and where it acts.', 'vendor-addon' ); ?></p>
-      <p class="bbcs-info-text"><?php esc_html_e( 'Explain what the admin can configure and what data is stored.', 'vendor-addon' ); ?></p>
-      <hr class="bbcs-info-hr">
-      <div class="bbcs-info-footer">
-        <i class="fa-regular fa-circle-question"></i>
-        <a href="https://botblocker.top/docs/" target="_blank" rel="noopener noreferrer" class="bbcs-info-footer-a"><?php esc_html_e( 'BotBlocker docs', 'vendor-addon' ); ?></a>
-        <a href="https://wordpress.org/plugins/botblocker-security/" target="_blank" rel="noopener noreferrer" class="bbcs-info-footer-a"><?php esc_html_e( 'Plugin page', 'vendor-addon' ); ?></a>
-        <a href="https://botblocker.top/contacts/" target="_blank" rel="noopener noreferrer" class="bbcs-info-footer-a"><?php esc_html_e( 'Support', 'vendor-addon' ); ?></a>
-      </div>
+    <div class="col-xxl-3 col-xl-6 col-lg-6 col-sm-12 col-md-12 bbcs-info-column">
+        <div class="bbcs-info-inner">
+            <?php if ( '' !== $icon_url ) : ?>
+                <img src="<?php echo esc_url( $icon_url ); ?>" alt="" class="img-fluid bbcs-info-image mb-3">
+            <?php else : ?>
+                <i class="fa-solid fa-puzzle-piece fa-3x bbcs_color_blue mb-3" aria-hidden="true"></i>
+            <?php endif; ?>
+            <p class="bbcs-info-text"><?php esc_html_e( 'Explain what the add-on does and where it acts.', 'vendor-addon' ); ?></p>
+            <p class="bbcs-info-text"><?php esc_html_e( 'Explain what the admin can configure and what data is stored.', 'vendor-addon' ); ?></p>
+            <hr class="bbcs-info-hr">
+            <div class="bbcs-info-footer">
+                <i class="fa-regular fa-circle-question"></i>
+                <a href="https://botblocker.top/docs/" target="_blank" rel="noopener noreferrer" class="bbcs-info-footer-a"><?php esc_html_e( 'BotBlocker docs', 'vendor-addon' ); ?></a>
+                <a href="https://botblocker.top/contacts/" target="_blank" rel="noopener noreferrer" class="bbcs-info-footer-a"><?php esc_html_e( 'Support', 'vendor-addon' ); ?></a>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div class="col-xxl-3 col-xl-6 col-lg-6 col-sm-12 col-md-12">
-    <h3 class="bbcs_settings_h3"><?php esc_html_e( 'Main', 'vendor-addon' ); ?></h3>
-    <!-- Settings controls go here. -->
-  </div>
+    <div class="col-xxl-3 col-xl-6 col-lg-6 col-sm-12 col-md-12">
+        <h3 class="bbcs_settings_h3"><?php esc_html_e( 'Main', 'vendor-addon' ); ?></h3>
+        <!-- Controls go here. -->
+    </div>
 </div>
 ```
 
-Cookie Alert help text example:
+Common BotBlocker field wrappers:
 
-```text
-Displays a lightweight first-party cookie notice for visitors and stores consent locally in a BotBlocker-named cookie.
+- `bbcs_checkbox_input`, `bbcs_label_checkbox_box`, `bbcs_label_input_checkbox` for checkboxes.
+- `bbcs_text_input`, `bbcs_label_input_box`, `bbcs-label-input`, `bbcs_text_input_inner`, `bbcs_text_input_input` for text, URL, and number fields.
+- `bbcs_textarea_input`, `bbcs_textarea_input_inner`, `bbcs_textarea_input_input` for textarea fields.
+- `bbcs_select_input`, `bbcs_select_input_inner`, `bbcs_select_input_select` for select fields.
 
-Use it for simple privacy notices where no external consent platform is required. Configure message text, policy link, button label, theme, position, and optional CSS.
-```
-
-Good footer links for a Cookie Alert add-on:
-
-- `Cookie guidance`: `https://gdpr.eu/cookies/`
-- `WordPress privacy`: `https://wordpress.org/documentation/article/settings-privacy-screen/`
-- `BotBlocker docs`: `https://botblocker.top/docs/`
-
-## JavaScript and CSS assets
-
-Do not use `plugin_dir_url()` for uploaded add-ons. Runtime add-ons live outside the BotBlocker plugin source directory. Use BotBlocker runtime asset helpers instead.
+Checkbox example:
 
 ```php
-function acme_bbcs_sample_asset_url( string $relative ): string {
+<div class="bbcs_checkbox_input mb-2">
+    <div class="bbcs_label_checkbox_box">
+        <input type="hidden" name="<?php echo esc_attr( $option ); ?>[enabled]" value="0">
+        <input type="checkbox" name="<?php echo esc_attr( $option ); ?>[enabled]" value="1" <?php checked( 1, $settings['enabled'] ?? 0 ); ?>>
+        <span class="bbcs_label_input_checkbox"><?php esc_html_e( 'Enable add-on', 'vendor-addon' ); ?></span>
+    </div>
+</div>
+```
+
+Text field example:
+
+```php
+<div class="bbcs_text_input mb-2">
+    <div class="bbcs_label_input_box">
+        <span class="bbcs-label-input"><?php esc_html_e( 'Label', 'vendor-addon' ); ?></span>
+    </div>
+    <div class="bbcs_text_input_inner">
+        <input type="text" name="<?php echo esc_attr( $option ); ?>[label]" class="bbcs_text_input_input" value="<?php echo esc_attr( $settings['label'] ?? '' ); ?>">
+    </div>
+</div>
+```
+
+Textarea and select examples are in `docs/settings-ui-patterns.md`.
+
+## Assets
+
+Uploaded add-ons live outside the BotBlocker plugin source directory. Do not use `plugin_dir_url()` for package assets.
+
+Use:
+
+```php
+function vendor_addon_asset_url( string $relative ): string {
     return function_exists( 'bbcs_addon_file_url' )
-        ? bbcs_addon_file_url( 'acme-botblocker-sample', $relative )
+        ? bbcs_addon_file_url( 'vendor-addon', $relative )
         : '';
 }
 ```
 
-Admin script example:
+Server caveat: BotBlocker installs runtime packages into a protected uploads directory. Test every icon/JS/CSS URL in a real WordPress install and confirm HTTP 200. See `docs/known-core-contract-gaps.md`.
 
-```php
-function acme_bbcs_sample_enqueue_admin_assets(): void {
-    $screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-    if ( ! $screen || false === strpos( (string) $screen->id, 'botblocker' ) ) {
-        return;
-    }
+## Code Quality Gate
 
-    $url = acme_bbcs_sample_asset_url( 'assets/admin.js' );
-    if ( '' === $url ) {
-        return;
-    }
+An add-on is not done until it passes:
 
-    wp_enqueue_script( 'acme-bbcs-sample-admin', $url, array(), '1.0.0', true );
-}
-add_action( 'admin_enqueue_scripts', 'acme_bbcs_sample_enqueue_admin_assets' );
-```
+- unique slug and prefix
+- valid manifest
+- valid one-root-folder ZIP
+- PHP lint
+- validator
+- escaped settings view output
+- explicit settings sanitizer
+- idempotent lifecycle callbacks
+- no `plugin_dir_url()` for runtime assets
+- no unprefixed globals
+- no unsafe superglobal usage
+- no writes into BotBlocker plugin source
+- WordPress upload/activate/save/deactivate/delete test
+- asset HTTP 200 test when using static assets
 
-Frontend script example:
+Read `docs/code-quality-standard.md` and `docs/testing.md` for the full checklist.
 
-```php
-function acme_bbcs_sample_enqueue_frontend_assets(): void {
-    $url = acme_bbcs_sample_asset_url( 'assets/frontend.js' );
-    if ( '' === $url ) {
-        return;
-    }
+## Reference Add-on
 
-    wp_enqueue_script( 'acme-bbcs-sample-frontend', $url, array(), '1.0.0', true );
-}
-add_action( 'wp_enqueue_scripts', 'acme_bbcs_sample_enqueue_frontend_assets' );
-```
+Use `examples/acme-botblocker-sample` as the canonical template.
 
-Use unique handles, enqueue only when needed, and pass server data with `wp_add_inline_script()` or `wp_localize_script()` after escaping and sanitizing the source values.
+Do not blindly copy first-party add-ons from `plugin/wp-content/plugins/botblocker-security/addons` for third-party packages. They are useful for BotBlocker behavior patterns, but some use internal settings and marketplace conventions.
 
-Assets may live under `assets/`, `inc/`, or another package directory. The path passed to `bbcs_addon_file_url()` must match the file's package-relative path, for example `assets/frontend.js` or `inc/bbcs-cookie-alert-js.js`.
-
-## Runtime model
-
-BotBlocker scans installed add-ons from its protected uploads runtime directory. Your source repository is not the runtime location. Uploading a ZIP installs or replaces the runtime copy, but the add-on remains inactive until an administrator activates it.
-
-BotBlocker supports both contracts:
-
-- v2 manifest add-ons using `bbcs-addon.json`.
-- v1 legacy add-ons using the classic root file, `inc/{slug}-core.php`, `inc/{slug}-settings.php`, icon, and `readme.txt` layout.
-
-Use v2 for new development.
-
-## Compatibility reference
-
-This kit is aligned with the working `bbcs-cookie-alert` v2 add-on and the real BotBlocker runtime mechanics:
-
-- `bbcs-cookie-alert.zip` is created by archiving the `bbcs-cookie-alert` folder itself.
-- The ZIP contains exactly one top-level folder named `bbcs-cookie-alert`.
-- The folder name matches `bbcs-addon.json` `slug`.
-- The manifest points to the real root file, core file, settings view, icon, and readme.
-- The settings view is rendered under `BotBlocker -> Tools` only after activation.
-- Settings are saved through `settings.option` and `settings.sanitize` from the Tools form.
-- Frontend JavaScript is loaded from the runtime add-on directory with a BotBlocker add-on asset URL helper.
-
-## Official links
+## Official Links
 
 - WordPress.org plugin page: https://wordpress.org/plugins/botblocker-security/
 - Product site: https://botblocker.top/products/
@@ -372,17 +312,8 @@ This kit is aligned with the working `bbcs-cookie-alert` v2 add-on and the real 
 - Developer studio: https://globus.studio/
 - Architecture and code: https://leonidov.dev/
 
-See `docs/links-and-assets.md` for screenshots, banners, icons, and additional public links.
+See `docs/links-and-assets.md` for screenshots, banners, icons, and public links.
 
-## Development rules
+## Definition Of Done
 
-- Prefix every function, class, option, action, filter, transient, cron hook, and asset handle.
-- Do not write into the BotBlocker plugin source directory.
-- Do not assume your add-on source repository exists on the production site.
-- Do not auto-enable destructive behavior on upload or activation.
-- Treat uploaded add-ons as executable PHP plugins. Keep the package small, auditable, and reversible.
-- Keep compatibility metadata accurate: `requires_core` and `requires_php` are enforced.
-
-## License
-
-This manual and sample code are intended for BotBlocker add-on development. Choose the final license for the standalone repository before publishing.
+A developer or AI can use this kit to create a v2 add-on, validate it, package it, upload it through BotBlocker admin, activate it, see its Add-ons card and Tools tab, save settings, observe runtime behavior, deactivate it, delete it, and reinstall it without fatal errors, PHP warnings, manual BotBlocker core edits, or undocumented assumptions.

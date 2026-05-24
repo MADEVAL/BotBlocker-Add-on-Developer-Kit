@@ -2,6 +2,15 @@
 
 Add-on API v2 is the preferred contract for third-party BotBlocker add-ons. It uses a JSON manifest, explicit paths, lifecycle callbacks, settings metadata, and optional feature providers.
 
+Read this document together with:
+
+- `botblocker-runtime-contract.md` for the real scan/load/install model.
+- `settings-contract.md` for the exact third-party settings save contract.
+- `settings-ui-patterns.md` for BotBlocker settings tab layout and field markup.
+- `lifecycle-and-features.md` for lifecycle dispatch and feature providers.
+- `code-quality-standard.md` for the required quality bar.
+- `testing.md` for validation and manual tests.
+
 ## Runtime locations
 
 BotBlocker separates source packages from runtime packages.
@@ -12,6 +21,8 @@ BotBlocker separates source packages from runtime packages.
 - Scanner entry point: `bbcs_scan_addons()`.
 
 An uploaded package is installed inactive. The administrator reviews and activates it from the Installed tab.
+
+The bundled first-party source folder `plugin/wp-content/plugins/botblocker-security/addons` is not the public third-party runtime location. It is useful for studying BotBlocker-owned add-ons and marketplace source conventions, but uploaded third-party packages are validated and copied into the protected uploads runtime directory.
 
 ## Minimal package
 
@@ -34,7 +45,7 @@ vendor-addon/
 
 The ZIP must contain exactly one root folder. The folder name must match the manifest `slug`. Archive the folder itself, not loose files inside the folder.
 
-This is the recommended layout. BotBlocker follows package-relative paths declared in the manifest and code, so real packages may place icons or scripts elsewhere. The working `bbcs-cookie-alert` package uses `bbcs-cookie-alert.svg` in the root and `inc/bbcs-cookie-alert-js.js` for frontend JavaScript. Both are valid because the paths are relative, safe, and inside the package.
+This is the recommended layout. BotBlocker follows package-relative paths declared in the manifest and code, so real packages may place icons or scripts elsewhere. A root icon such as `{slug}.svg` or a frontend script under `inc/` is valid when the manifest/code points to the correct package-relative path.
 
 ## Manifest
 
@@ -205,6 +216,8 @@ Field names must be option-array names:
 <input type="text" name="vendor_addon_settings[label]" value="<?php echo esc_attr( $settings['label'] ?? '' ); ?>">
 ```
 
+Do not copy first-party plain field settings into third-party v2 add-ons. Fields like `disable_emojis` or `security_headers_enable` are saved by BotBlocker core's internal first-party logic, not by the generic third-party v2 settings flow.
+
 Use lifecycle callbacks for defaults and cleanup:
 
 ```php
@@ -341,7 +354,25 @@ add_action( 'wp_enqueue_scripts', 'vendor_addon_enqueue_frontend_assets' );
 
 Use unique handles. Enqueue only on screens or requests that need the asset. Pass settings to scripts with `wp_add_inline_script()` or `wp_localize_script()` after sanitizing source values.
 
-The helper accepts any safe package-relative path that exists in the runtime add-on folder, such as `assets/admin.js`, `assets/frontend.js`, or `inc/bbcs-cookie-alert-js.js`.
+The helper accepts any safe package-relative path that exists in the runtime add-on folder, such as `assets/admin.js`, `assets/frontend.js`, or `inc/frontend.js`.
+
+Runtime asset caveat: BotBlocker installs add-ons into a protected uploads directory. In some web-server configurations, direct static asset requests under that directory may return 403. Always test declared icon, JS, CSS, and image URLs in a real WordPress install. See `known-core-contract-gaps.md`.
+
+## Validation
+
+Validate a source folder:
+
+```powershell
+php .\tools\validate-addon.php .\examples\acme-botblocker-sample
+```
+
+Validate a ZIP:
+
+```powershell
+php .\tools\validate-addon.php .\dist\acme-botblocker-sample.zip
+```
+
+The validator checks the manifest, slug/root match, required paths, PHP syntax, settings option field names, lifecycle callbacks, sanitizer callback, unsafe paths, and common asset mistakes.
 
 ## v1 compatibility
 
