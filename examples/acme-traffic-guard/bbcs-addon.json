@@ -1,0 +1,39 @@
+{
+  "schema": "2.0",
+  "slug": "acme-traffic-guard",
+  "name": "ACME Traffic Guard",
+  "version": "1.0.0",
+  "requires_core": "1.6.20",
+  "requires_php": "7.4",
+  "author": "ACME Security",
+  "description": "Dangerous-by-design sample traffic decision provider with dry-run defaults, safe redirect guards, and explicit pre-run opt-in.",
+  "main": "acme-traffic-guard.php",
+  "core": "inc/core.php",
+  "settings": {
+    "view": "inc/settings.php",
+    "option": "acme_bbcs_traffic_guard_settings",
+    "sanitize": "acme_bbcs_traffic_guard_sanitize_settings"
+  },
+  "lifecycle": {
+    "activate": "acme_bbcs_traffic_guard_activate",
+    "deactivate": "acme_bbcs_traffic_guard_deactivate",
+    "delete": "acme_bbcs_traffic_guard_delete"
+  },
+  "features": [
+    "traffic_manager",
+    "traffic_decision_provider"
+  ],
+  "runtime": {
+    "pre_run": {
+      "enabled": true,
+      "file": "inc/pre-run.php",
+      "contract": "traffic_decision_provider",
+      "ready_constant": "ACME_BBCS_TRAFFIC_GUARD_PRE_RUN_READY",
+      "register": "acme_bbcs_traffic_guard_pre_run_register"
+    }
+  },
+  "assets": {
+    "icon": "assets/icon.svg",
+    "readme": "readme.txt"
+  }
+}

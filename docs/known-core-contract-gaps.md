@@ -78,3 +78,28 @@ Required follow-up:
 Kit status:
 
 - Documented in `docs/botblocker-runtime-contract.md`.
+
+## Generic v2 add-ons are not in-cycle traffic providers
+
+BotBlocker loads normal active v2 add-on core files after `$botBlocker->initialize()` has already run the main request-check cycle. Only add-ons that explicitly opt into `runtime.pre_run` with `traffic_decision_provider` are loaded before the cycle.
+
+Impact:
+
+- A normal v2 add-on can read the final `BotBlocker::getInstance()` state from later WordPress hooks.
+- A normal v2 add-on can redirect or tag requests that BotBlocker already allowed.
+- In full secure mode, blocked/challenged requests may stop before normal v2 add-ons are included.
+- A normal v2 add-on cannot reliably make allow/block/captcha/redirect/bypass decisions before BotBlocker core challenges or blocks a request.
+- Traffic-management add-ons that need to participate inside the core decision pipeline must use the `runtime.pre_run` manifest contract.
+- Pre-run traffic providers are critical-risk add-ons. They should be disabled by default, support dry-run, and be tested on staging before production traffic is affected.
+
+Required follow-up:
+
+- Keep the distinction between normal late-loaded add-ons and pre-run traffic providers explicit.
+- Keep provider decisions routed through BotBlocker core validation instead of letting add-ons mutate BotBlocker properties directly.
+
+Kit status:
+
+- Post-check redirect patterns are documented in `docs/traffic-and-redirect-addons.md`.
+- Pre-run traffic provider hooks are documented in `docs/core-hook-integration.md`.
+- The reference pre-run traffic provider package is `examples/acme-traffic-guard`.
+- Available object fields are documented in `docs/botblocker-core-object.md`, `docs/botblocker-request-data.md`, and `docs/botblocker-settings-reference.md`.

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="ACME Traffic Guard icon">
+  <rect width="128" height="128" rx="18" fill="#17202a"/>
+  <path d="M24 30h34c18 0 28 10 32 27l2 8h14L83 98 60 65h14l-2-7c-2-8-6-12-15-12H24z" fill="#37c871"/>
+  <path d="M24 82h33c8 0 12-4 15-12l6 13c-6 10-14 15-27 15H24z" fill="#f2c94c"/>
+  <circle cx="101" cy="33" r="11" fill="#eb5757"/>
+</svg>

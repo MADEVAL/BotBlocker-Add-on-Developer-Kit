@@ -8,12 +8,14 @@ From the developer kit root:
 
 ```powershell
 php .\tools\validate-addon.php .\examples\acme-botblocker-sample
+php .\tools\validate-addon.php .\examples\acme-traffic-guard
 ```
 
 Run PHP lint:
 
 ```powershell
 Get-ChildItem .\examples\acme-botblocker-sample -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
+Get-ChildItem .\examples\acme-traffic-guard -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
 ```
 
 Expected:
@@ -32,6 +34,7 @@ Create a ZIP:
 
 ```powershell
 .\tools\package-addon.ps1 -AddonPath .\examples\acme-botblocker-sample -DestinationPath .\dist\acme-botblocker-sample.zip
+.\tools\package-addon.ps1 -AddonPath .\examples\acme-traffic-guard -DestinationPath .\dist\acme-traffic-guard.zip
 ```
 
 Validate the ZIP:
@@ -79,6 +82,33 @@ For every declared icon, JS, CSS, or image URL returned by `bbcs_addon_file_url(
 
 If runtime static assets are blocked by server protection files, either use inline output where practical or fix BotBlocker core asset delivery for safe declared add-on assets.
 
+## BotBlocker data access test
+
+For add-ons that read `BotBlocker::getInstance()`:
+
+- Visit a normal frontend page and confirm the add-on can read `cid`, `ip`, `uri`, `request_method`, `country`, `visitorType`, and `result_of_action` without PHP notices.
+- Test an admin page and confirm admin requests are skipped or handled intentionally.
+- Test a BotBlocker check/block/denied flow and confirm the add-on does not expose hive data or override security pages.
+- Test with missing/empty optional fields such as country, ASN, referrer, browser, OS, and device.
+- Confirm salts, API credentials, raw cookies, and full hive data are never printed to frontend output or public logs.
+
+## Traffic and redirect test
+
+For traffic managers and redirect add-ons:
+
+- Treat the add-on as critical production traffic-control code.
+- Confirm the add-on is disabled by default after install/activate.
+- Enable dry-run mode and confirm matching rules are logged without redirecting.
+- Keep dry-run evidence before enabling real redirects in production.
+- Confirm redirects run only for `GET` and `HEAD` by default.
+- Confirm `POST`, AJAX, cron, REST write requests, login, admin, and payment callbacks are not redirected by default.
+- Confirm verified legal bots and BotBlocker security pages are not redirected.
+- Confirm every target uses `wp_safe_redirect()` and passes same-site or allowed-host validation.
+- Confirm loop protection by testing a rule whose target equals the current URL.
+- Confirm country, ASN, path, referrer, and device rules behave correctly when fields are empty or `BOTBLOCKER_EMPTY`.
+- Confirm the add-on documents when it needs the core hook contract from `core-hook-integration.md`.
+- Confirm there is a documented rollback path: deactivate the add-on, disable the rule, or restore dry-run.
+
 ## Lifecycle test
 
 If the add-on declares lifecycle callbacks, test:
@@ -114,4 +144,3 @@ Review:
 - no raw request values are used directly
 - remote calls have timeouts
 - destructive behavior is explicit and reversible
-

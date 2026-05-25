@@ -56,10 +56,25 @@ BotBlocker boots from `botblocker-security.php`.
 1. Core helpers and upload helpers are included.
 2. `bbcs_run_botblocker_shield()` runs on `plugins_loaded` with priority `-9998`.
 3. BotBlocker checks installation state and initializes the core plugin.
-4. `bbcs_include_active_addons()` scans runtime add-ons and includes active compatible add-on core files.
-5. Admin menu, admin assets, and setup wizard are initialized.
+4. `bbcs_include_active_v2_addons_pre_run()` loads only active compatible v2 traffic providers that explicitly opt into the pre-run contract.
+5. BotBlocker initializes and runs the main request-check cycle.
+6. `bbcs_include_active_addons()` scans runtime add-ons and includes active compatible add-on core files for normal late runtime behavior.
+7. Admin menu, admin assets, and setup wizard are initialized.
 
 Your add-on `core` file is included only when the add-on is active, or when BotBlocker needs the file to call a lifecycle/settings callback.
+
+Important timing rule: normal active v2 add-on core files are included after `$botBlocker->initialize()` has completed the main request-check cycle. That is enough for admin screens, frontend assets, headers, settings, lifecycle callbacks, and post-check WordPress hooks. A third-party add-on can register callbacks inside `BotBlocker::run()` only through the stricter `runtime.pre_run` traffic decision provider contract.
+
+The pre-run contract is intentionally narrow because it is dangerous. A traffic provider can affect live request outcomes before BotBlocker finishes checks. Use `examples/acme-traffic-guard` as the reference, keep providers disabled/dry-run by default, and avoid remote calls or heavy diagnostics in pre-run files.
+
+In full secure mode, a BotBlocker block/check/deny path can stop execution during `initialize()`. In that case a normal v2 add-on loaded after `initialize()` may not run at all for the blocked request.
+
+Use:
+
+- `botblocker-core-object.md` to read the final live object safely.
+- `botblocker-request-data.md` to understand available visitor/request fields.
+- `traffic-and-redirect-addons.md` for post-check redirect patterns and traffic provider selection.
+- `core-hook-integration.md` for the pre-run traffic decision provider contract.
 
 ## Scanner
 

@@ -60,6 +60,32 @@ function bbcs_validator_safe_relative_path($path): string {
     return $path;
 }
 
+function bbcs_validator_safe_symbol_name($value): string {
+    if (!is_string($value)) {
+        return '';
+    }
+
+    $value = trim($value);
+    if ($value === '') {
+        return '';
+    }
+
+    return preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $value) ? $value : '';
+}
+
+function bbcs_validator_safe_callable_name($value): string {
+    if (!is_string($value)) {
+        return '';
+    }
+
+    $value = trim($value);
+    if ($value === '') {
+        return '';
+    }
+
+    return preg_match('/^[A-Za-z_\\\\][A-Za-z0-9_\\\\]*(::[A-Za-z_][A-Za-z0-9_]*)?$/', $value) ? $value : '';
+}
+
 function bbcs_validator_rrmdir(string $dir): void {
     if (!is_dir($dir)) {
         return;
@@ -345,6 +371,75 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         }
         if (!isset($functions[$callback])) {
             bbcs_validator_error($errors, 'Lifecycle callback not found in PHP files: ' . $callback);
+        }
+    }
+
+    $features = array();
+    if (is_array($manifest['features'] ?? null)) {
+        foreach ($manifest['features'] as $feature) {
+            $feature = bbcs_validator_slug((string) $feature);
+            if ($feature !== '') {
+                $features[] = $feature;
+            }
+        }
+    }
+
+    $runtime = is_array($manifest['runtime'] ?? null) ? $manifest['runtime'] : array();
+    $pre_run = is_array($runtime['pre_run'] ?? null) ? $runtime['pre_run'] : array();
+    $has_traffic_provider = in_array('traffic_decision_provider', $features, true);
+    $has_pre_run = !empty($pre_run);
+
+    if ($has_traffic_provider) {
+        bbcs_validator_warning($warnings, 'This package declares traffic_decision_provider. Treat it as critical-risk traffic-control code: disabled by default, dry-run first, staging test, and rollback required.');
+
+        if (!$has_pre_run) {
+            bbcs_validator_error($errors, 'traffic_decision_provider requires runtime.pre_run manifest contract.');
+        }
+    }
+
+    if ($has_pre_run && !$has_traffic_provider) {
+        bbcs_validator_error($errors, 'runtime.pre_run is declared but features does not include traffic_decision_provider.');
+    }
+
+    if ($has_pre_run) {
+        if (empty($pre_run['enabled'])) {
+            bbcs_validator_error($errors, 'runtime.pre_run.enabled must be true for a pre-run traffic provider.');
+        }
+
+        if (($pre_run['contract'] ?? '') !== 'traffic_decision_provider') {
+            bbcs_validator_error($errors, 'runtime.pre_run.contract must be traffic_decision_provider.');
+        }
+
+        $pre_run_file_rel = bbcs_validator_safe_relative_path($pre_run['file'] ?? '');
+        if ($pre_run_file_rel === '') {
+            bbcs_validator_error($errors, 'runtime.pre_run.file must be a safe package-relative path.');
+        } else {
+            $pre_run_file = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $pre_run_file_rel);
+            if (!is_file($pre_run_file)) {
+                bbcs_validator_error($errors, 'runtime.pre_run.file does not exist: ' . $pre_run_file_rel);
+            }
+        }
+
+        $register = bbcs_validator_safe_callable_name($pre_run['register'] ?? '');
+        if ($register === '') {
+            bbcs_validator_error($errors, 'runtime.pre_run.register must be a safe callable name.');
+        } elseif (strpos($register, '::') === false && !isset($functions[$register])) {
+            bbcs_validator_error($errors, 'runtime.pre_run.register callback not found in PHP files: ' . $register);
+        }
+
+        $ready_constant = bbcs_validator_safe_symbol_name($pre_run['ready_constant'] ?? '');
+        $ready_callback = bbcs_validator_safe_callable_name($pre_run['ready_callback'] ?? '');
+        if ($ready_constant === '' && $ready_callback === '') {
+            bbcs_validator_error($errors, 'runtime.pre_run must declare ready_constant or ready_callback.');
+        }
+        if (!empty($pre_run['ready_constant']) && $ready_constant === '') {
+            bbcs_validator_error($errors, 'runtime.pre_run.ready_constant must be a safe symbol name.');
+        }
+        if (!empty($pre_run['ready_callback']) && $ready_callback === '') {
+            bbcs_validator_error($errors, 'runtime.pre_run.ready_callback must be a safe callable name.');
+        }
+        if ($ready_callback !== '' && strpos($ready_callback, '::') === false && !isset($functions[$ready_callback])) {
+            bbcs_validator_error($errors, 'runtime.pre_run.ready_callback not found in PHP files: ' . $ready_callback);
         }
     }
 

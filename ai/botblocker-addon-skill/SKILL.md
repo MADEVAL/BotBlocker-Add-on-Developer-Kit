@@ -61,6 +61,9 @@ Identify:
 - name
 - purpose
 - runtime surface: admin, frontend, request/headers, cron, API, diagnostics
+- whether BotBlocker request data is needed
+- whether traffic decisions can run after BotBlocker allows the request
+- whether the add-on requires in-cycle BotBlocker core hooks
 - minimum BotBlocker version
 - minimum PHP version
 - function/class prefix
@@ -78,6 +81,11 @@ Read or follow the local docs when available:
 
 - `docs/botblocker-runtime-contract.md`
 - `docs/addon-api-v2.md`
+- `docs/botblocker-core-object.md`
+- `docs/botblocker-request-data.md`
+- `docs/botblocker-settings-reference.md`
+- `docs/traffic-and-redirect-addons.md`
+- `docs/core-hook-integration.md`
 - `docs/settings-contract.md`
 - `docs/settings-ui-patterns.md`
 - `docs/lifecycle-and-features.md`
@@ -181,6 +189,23 @@ Match BotBlocker settings UI patterns from `docs/settings-ui-patterns.md`: start
 - Do not assume the source repository exists in production.
 - Keep remote network calls explicit, documented, timeout-bound, and optional when practical.
 
+## BotBlocker data and traffic rules
+
+When an add-on needs visitor data, read from `BotBlocker::getInstance()` through a narrow helper and normalize values into an add-on-owned context array. Do not expose `get_bot_blocker_hive()` to public visitors.
+
+Traffic-management add-ons are critical-risk code. They can redirect, allow, bypass, block, or challenge real production requests inside BotBlocker's security flow. Treat every traffic decision as a security-sensitive change: default to disabled, default to dry-run, require staging tests, document rollback, and never generate an active redirect/block/bypass behavior casually.
+
+For redirect or traffic-management add-ons:
+
+- Use `docs/traffic-and-redirect-addons.md` for choosing post-check redirects versus pre-run traffic decisions.
+- Prefer post-check WordPress hooks unless the user explicitly needs in-cycle request decisions.
+- Use `examples/acme-traffic-guard` as the reference only for advanced traffic-management add-ons.
+- Redirect only requests BotBlocker already allowed unless the add-on explicitly implements the `traffic_decision_provider` pre-run contract.
+- Skip BotBlocker check/block/denied pages, admin, AJAX, cron, unsafe HTTP methods, payment callbacks, and verified legal bots by default.
+- Use `wp_safe_redirect()`, loop checks, same-site targets or an explicit host allowlist, and a dry-run setting.
+- If the add-on must decide before BotBlocker core blocks/challenges the request, require manifest `features: ["traffic_decision_provider"]`, `runtime.pre_run`, a readiness marker, and a registration callback as documented in `docs/core-hook-integration.md`.
+- Do not use `allow`, `bypass`, `block`, or `captcha` decisions for marketing routing. Those decisions require an explicit security or integration rationale.
+
 ## Asset caveat
 
 BotBlocker installs runtime packages into a protected uploads directory. Static asset URLs returned by `bbcs_addon_file_url()` must be tested in a real WordPress install for HTTP 200. If the server blocks them, use inline output where practical or raise a BotBlocker core asset-delivery fix.
@@ -211,6 +236,12 @@ Preferred PowerShell from kit root:
 
 ```powershell
 .\tools\package-addon.ps1 -AddonPath .\examples\acme-botblocker-sample -DestinationPath .\dist\acme-botblocker-sample.zip
+```
+
+Traffic example:
+
+```powershell
+.\tools\package-addon.ps1 -AddonPath .\examples\acme-traffic-guard -DestinationPath .\dist\acme-traffic-guard.zip
 ```
 
 Manual PowerShell from the parent directory:

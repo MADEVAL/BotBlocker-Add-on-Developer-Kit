@@ -17,9 +17,15 @@ Some bundled first-party BotBlocker add-ons declare `requires_core: 1.6.15`. Tha
 
 ## What Is Inside
 
-- `examples/acme-botblocker-sample`: canonical v2 sample add-on.
+- `examples/acme-botblocker-sample`: canonical v2 sample add-on for normal late-loaded behavior.
+- `examples/acme-traffic-guard`: advanced v2 sample add-on for the pre-run `traffic_decision_provider` contract.
 - `docs/botblocker-runtime-contract.md`: how BotBlocker scans, installs, activates, and loads add-ons.
 - `docs/addon-api-v2.md`: manifest, settings, lifecycle, feature providers, assets.
+- `docs/botblocker-core-object.md`: how to safely read the live `BotBlocker` object from an add-on.
+- `docs/botblocker-request-data.md`: visitor/request/decision/browser data map available on the BotBlocker object.
+- `docs/botblocker-settings-reference.md`: BotBlocker core settings reference for read-only add-on decisions.
+- `docs/traffic-and-redirect-addons.md`: practical guide for traffic managers, redirect managers, and routers.
+- `docs/core-hook-integration.md`: required core hook contract for add-ons that must run inside the BotBlocker check cycle.
 - `docs/settings-contract.md`: exact settings save contract for third-party v2 add-ons.
 - `docs/settings-ui-patterns.md`: BotBlocker settings tab layout, help block, field classes, and field examples.
 - `docs/lifecycle-and-features.md`: lifecycle callbacks and feature provider rules.
@@ -47,6 +53,14 @@ The real runtime flow is:
 
 Read `docs/botblocker-runtime-contract.md` before writing code.
 
+Important timing note: normal active v2 add-ons are still included after the main BotBlocker request check has run. A traffic add-on can participate inside the request cycle only when it explicitly opts into the pre-run contract described in `docs/core-hook-integration.md`: manifest `features` must include `traffic_decision_provider`, manifest `runtime.pre_run` must name a safe pre-run file, and that file must expose the declared readiness marker plus registration callback.
+
+## Critical Traffic-Control Warning
+
+Traffic-management add-ons are high-risk security and operations code. A bad rule can redirect real visitors, break checkout/payment callbacks, block support/admin workflows, hide BotBlocker challenge or denied pages, create redirect loops, or weaken BotBlocker protection.
+
+Use `traffic_decision_provider` only when a normal post-check WordPress hook cannot solve the problem. Ship traffic add-ons disabled by default, keep `dry_run` enabled first, test on staging, document rollback steps, and require explicit administrator review before production redirects, blocks, bypasses, or CAPTCHA decisions are enabled.
+
 ## Fast Path For A New Add-on
 
 1. Copy `examples/acme-botblocker-sample` to a new folder named with your final slug.
@@ -55,11 +69,13 @@ Read `docs/botblocker-runtime-contract.md` before writing code.
 4. Define admin controls in `inc/settings.php`.
 5. Declare every settings field under `settings.option`, for example `vendor_addon_settings[enabled]`.
 6. Implement the manifest-declared sanitizer.
-7. Implement lifecycle callbacks only when needed.
-8. Validate the source folder.
-9. Package it.
-10. Validate the ZIP.
-11. Upload it through BotBlocker admin and run the manual tests.
+7. If the add-on needs visitor/request data, read `docs/botblocker-core-object.md` and `docs/botblocker-request-data.md`.
+8. If the add-on redirects or manages traffic, read `docs/traffic-and-redirect-addons.md`, inspect `examples/acme-traffic-guard`, and choose either post-check WordPress hooks or the stricter pre-run traffic decision provider contract.
+9. Implement lifecycle callbacks only when needed.
+10. Validate the source folder.
+11. Package it.
+12. Validate the ZIP.
+13. Upload it through BotBlocker admin and run the manual tests.
 
 ## Validate
 
@@ -67,6 +83,7 @@ From this kit root:
 
 ```powershell
 php .\tools\validate-addon.php .\examples\acme-botblocker-sample
+php .\tools\validate-addon.php .\examples\acme-traffic-guard
 ```
 
 Validate a ZIP:
@@ -81,6 +98,7 @@ PowerShell:
 
 ```powershell
 .\tools\package-addon.ps1 -AddonPath .\examples\acme-botblocker-sample -DestinationPath .\dist\acme-botblocker-sample.zip
+.\tools\package-addon.ps1 -AddonPath .\examples\acme-traffic-guard -DestinationPath .\dist\acme-traffic-guard.zip
 ```
 
 Manual equivalent:
@@ -295,9 +313,20 @@ An add-on is not done until it passes:
 
 Read `docs/code-quality-standard.md` and `docs/testing.md` for the full checklist.
 
-## Reference Add-on
+## Reference Add-ons
 
-Use `examples/acme-botblocker-sample` as the canonical template.
+Use `examples/acme-botblocker-sample` as the canonical normal add-on template.
+
+Use `examples/acme-traffic-guard` only for advanced traffic-management add-ons that must participate inside the BotBlocker request cycle. It demonstrates:
+
+- manifest `features: ["traffic_manager", "traffic_decision_provider"]`
+- manifest `runtime.pre_run`
+- separate `inc/pre-run.php`
+- readiness marker and provider registration callback
+- dry-run `log_only` decisions
+- guarded `redirect` decisions
+- BotBlocker Tools settings under `settings.option`
+- recent match logging with hashed IP values
 
 Do not blindly copy first-party add-ons from `plugin/wp-content/plugins/botblocker-security/addons` for third-party packages. They are useful for BotBlocker behavior patterns, but some use internal settings and marketplace conventions.
 

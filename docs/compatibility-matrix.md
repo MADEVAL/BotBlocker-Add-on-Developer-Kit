@@ -8,9 +8,12 @@ This matrix maps the developer kit against the current BotBlocker Security add-o
 | --- | --- | --- | --- |
 | Third-party source package | Any developer workspace | Edited source code | Must become a valid v2 ZIP |
 | Developer kit sample | `examples/acme-botblocker-sample` | Canonical third-party v2 template | Recommended |
+| Developer kit traffic sample | `examples/acme-traffic-guard` | Advanced pre-run traffic decision provider template | Critical-risk; use only when needed |
 | First-party source add-ons | `plugin/wp-content/plugins/botblocker-security/addons` | BotBlocker-owned add-ons and marketplace source | Useful, but not always third-party-safe |
 | Runtime add-ons | `wp-content/uploads/BotBlocker/addons` | Installed, scanned, activated packages | Authoritative |
 | Marketplace builder input | `plugin/wp-content/plugins/botblocker-security/addons` | Source for `bbcs-addons` manager | Internal/legacy |
+| BotBlocker object read access | `BotBlocker::getInstance()` | Final request state for add-ons | Read-only; timing-limited |
+| In-cycle traffic decisions | Pre-run `traffic_decision_provider` plus `BotBlocker::run()` stages | Allow/block/captcha/redirect/bypass/log-only before core final response | Supported only with explicit pre-run opt-in |
 
 ## v2 package requirements
 
@@ -70,6 +73,18 @@ Third-party packages must not rely on BotBlocker core's hardcoded first-party op
 | `load` | Active add-on include on request | Lightweight diagnostics only |
 | `health_check` | After active add-on load | Repair reversible integration state |
 
+## Traffic add-on support
+
+Traffic add-ons are critical-risk code. Prefer post-check hooks for ordinary redirects. Use the pre-run provider path only when the add-on must participate inside BotBlocker's request cycle and can be tested with dry-run, staging, loop protection, and rollback steps.
+
+| Use case | Current v2 status | Required pattern |
+| --- | --- | --- |
+| Read final visitor/request data | Supported from later WP hooks | `BotBlocker::getInstance()` snapshot, see `botblocker-request-data.md` |
+| Redirect allowed frontend requests | Supported | `template_redirect` after BotBlocker security pages, see `traffic-and-redirect-addons.md` |
+| Redirect/check admin pages | Supported only when explicitly scoped | Capability checks, nonce checks, no public redirects |
+| Override BotBlocker block/check/deny decision | Supported only for `traffic_decision_provider` pre-run add-ons | `runtime.pre_run` manifest contract and decision provider from `core-hook-integration.md` |
+| Early-init traffic routing | Not supported by normal v2 add-ons | Separate early-init provider contract |
+
 ## Known mismatches
 
 | Mismatch | Impact | Resolution |
@@ -78,3 +93,4 @@ Third-party packages must not rely on BotBlocker core's hardcoded first-party op
 | First-party source lives in plugin directory, runtime scan lives in uploads | Developers may test the wrong folder | Document three-location model |
 | Marketplace builder parses root PHP headers, not v2 manifest | Marketplace publishing can diverge from v2 metadata | Track as core/tooling gap |
 | Protected uploads may block static asset URLs | Frontend/admin JS or icons may fail in some servers | Require HTTP 200 asset test; track core delivery gap |
+| Normal active v2 add-ons load after the main request-check cycle | Generic add-ons cannot make in-cycle traffic decisions | Use post-check pattern or explicit `traffic_decision_provider` pre-run contract |

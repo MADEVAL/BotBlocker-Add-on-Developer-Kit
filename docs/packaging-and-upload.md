@@ -52,6 +52,12 @@ Preferred command from the developer kit root:
 .\tools\package-addon.ps1 -AddonPath .\examples\acme-botblocker-sample -DestinationPath .\dist\acme-botblocker-sample.zip
 ```
 
+Traffic provider example:
+
+```powershell
+.\tools\package-addon.ps1 -AddonPath .\examples\acme-traffic-guard -DestinationPath .\dist\acme-traffic-guard.zip
+```
+
 The script validates the source folder, builds a one-root-folder ZIP, and validates the ZIP when PHP is available.
 
 Manual command from the directory that contains the add-on folder:
@@ -74,6 +80,7 @@ Validate a folder:
 
 ```powershell
 php .\tools\validate-addon.php .\examples\acme-botblocker-sample
+php .\tools\validate-addon.php .\examples\acme-traffic-guard
 ```
 
 Validate a ZIP:

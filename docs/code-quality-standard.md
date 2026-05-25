@@ -106,6 +106,24 @@ Third-party add-ons must not:
 - silently disable BotBlocker checks
 - silently weaken firewall, CAPTCHA, logging, or request filtering behavior
 
+## Traffic-control add-ons
+
+Traffic add-ons that redirect, allow, bypass, block, or challenge requests are critical-risk code.
+
+Required quality bar:
+
+- disabled by default
+- dry-run or log-only mode enabled by default
+- same-site redirect targets by default
+- loop protection
+- safe HTTP method guard
+- admin, AJAX, cron, REST, login, payment callback, and BotBlocker security-page guards
+- verified legal bot handling documented
+- rollback steps documented
+- staging test evidence before production activation
+
+Do not use `allow`, `bypass`, `block`, or `captcha` decisions for ordinary marketing routing. Those actions require a documented security or integration reason.
+
 ## Remote calls
 
 Remote calls must be:
@@ -162,4 +180,3 @@ Avoid:
 - large binary assets
 
 BotBlocker rejects ZIP packages larger than 20 MB and entries larger than 5 MB when `ZipArchive` is available.
-

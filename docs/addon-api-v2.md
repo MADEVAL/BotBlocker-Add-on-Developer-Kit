@@ -5,6 +5,10 @@ Add-on API v2 is the preferred contract for third-party BotBlocker add-ons. It u
 Read this document together with:
 
 - `botblocker-runtime-contract.md` for the real scan/load/install model.
+- `botblocker-core-object.md` and `botblocker-request-data.md` for reading live BotBlocker request state.
+- `botblocker-settings-reference.md` for read-only core settings available to add-ons.
+- `traffic-and-redirect-addons.md` for traffic managers, redirect managers, and routers.
+- `core-hook-integration.md` for add-ons that require in-cycle BotBlocker decisions.
 - `settings-contract.md` for the exact third-party settings save contract.
 - `settings-ui-patterns.md` for BotBlocker settings tab layout and field markup.
 - `lifecycle-and-features.md` for lifecycle dispatch and feature providers.
@@ -110,6 +114,7 @@ File name: `bbcs-addon.json`.
 - `lifecycle.update`: callback for package replacement/update flows.
 - `lifecycle.load`: callback for active add-on load events.
 - `lifecycle.health_check`: callback for diagnostic flows.
+- `runtime.pre_run`: optional strict pre-run contract for in-cycle traffic decision providers.
 - `features`: provider capability names exposed by the active add-on.
 - `assets.icon`: relative icon path shown in the Add-ons UI.
 - `assets.readme`: package readme path.
@@ -178,6 +183,77 @@ The core file is loaded when the add-on is active or when BotBlocker needs a lif
 - Prefix all symbols.
 - Keep activation and deletion reversible.
 - Store runtime data in WordPress options, transients, custom tables, or protected uploads as appropriate.
+
+## Pre-run traffic providers
+
+Normal v2 add-on `core` files are loaded late, after BotBlocker has completed the main request-check cycle. Add-ons that must participate inside that cycle need an explicit pre-run contract.
+
+This is a critical-risk mode. A pre-run traffic provider can affect real production requests before BotBlocker finishes its own decision path. Prefer normal post-check hooks unless in-cycle decisions are truly required. Pre-run traffic add-ons should ship disabled by default, start in dry-run, and include rollback instructions.
+
+Use `examples/acme-traffic-guard` as the complete reference package for this contract.
+
+Manifest example:
+
+```json
+{
+  "features": [
+    "traffic_decision_provider"
+  ],
+  "runtime": {
+    "pre_run": {
+      "enabled": true,
+      "file": "inc/pre-run.php",
+      "contract": "traffic_decision_provider",
+      "ready_constant": "VENDOR_TRAFFIC_PRE_RUN_READY",
+      "register": "vendor_traffic_pre_run_register"
+    }
+  }
+}
+```
+
+Pre-run rules:
+
+- `features` must include `traffic_decision_provider`.
+- `runtime.pre_run.enabled` must be `true`.
+- `runtime.pre_run.file` must be a safe package-relative PHP path.
+- `runtime.pre_run.contract` must be `traffic_decision_provider`.
+- `runtime.pre_run.register` must be a callable function or static method name.
+- The manifest must declare either `ready_constant` or `ready_callback`.
+- If the declared marker is missing after the pre-run file is included, BotBlocker refuses to register the provider.
+- The pre-run file must only register callbacks. Do not echo, scan files, call remote APIs, update settings, render UI, or run expensive work.
+
+Pre-run file example:
+
+```php
+<?php
+if ( ! defined( 'ABSPATH' ) || ! defined( 'BOTBLOCKER' ) ) {
+    exit;
+}
+
+define( 'VENDOR_TRAFFIC_PRE_RUN_READY', true );
+
+function vendor_traffic_pre_run_register( array $addon, array $context, string $event, string $slug ): void {
+    bbcs_register_traffic_decision_provider( $slug, 'vendor_traffic_decide', 20 );
+}
+
+function vendor_traffic_decide( BotBlocker $bbcs, string $stage, array $provider ): ?array {
+    if ( 'pre_core_rules' !== $stage ) {
+        return null;
+    }
+
+    if ( 'DE' === strtoupper( (string) $bbcs->country ) ) {
+        return array(
+            'action' => 'redirect',
+            'url'    => home_url( '/de/' ),
+            'status' => 302,
+            'reason' => 'Country route',
+            'source' => $provider['slug'],
+        );
+    }
+
+    return null;
+}
+```
 
 ## Settings
 
