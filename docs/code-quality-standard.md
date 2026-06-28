@@ -73,7 +73,7 @@ Use WordPress helpers:
 
 For custom admin actions, require:
 
-- `current_user_can( bbcs_can_manage() )` when available
+- `current_user_can( 'manage_options' )` or equivalent capability check
 - nonce creation and verification
 - safe redirect with `wp_safe_redirect()`
 
@@ -137,7 +137,7 @@ Remote calls must be:
 
 ## Assets
 
-Uploaded add-ons must use `bbcs_addon_file_url()` for package assets.
+Uploaded add-ons must use `BotBlockerAddons::fileUrl()` for package assets.
 
 Admin assets:
 

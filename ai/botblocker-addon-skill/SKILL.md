@@ -1,273 +1,210 @@
+---
+name: botblocker-addon-skill
+description: >-
+  Use when building, reviewing, debugging, packaging, or validating BotBlocker
+  Security add-ons — WordPress anti-bot firewall extensions that ship as Add-on
+  API v2 packages with a bbcs-addon.json manifest. Trigger keywords: BotBlocker
+  add-on, bbcs-addon.json, Add-on API v2, addon lifecycle callback,
+  settings.option sanitizer, traffic_decision_provider, runtime.pre_run,
+  BotBlockerAddons::fileUrl, validate-addon, package-addon. Use ONLY for
+  BotBlocker add-on development; do not use for general WordPress plugins or for
+  editing BotBlocker core itself.
+license: GPL-2.0-or-later
+metadata:
+  baseline: "BotBlocker Security 1.6.20+"
+  format: "Add-on API v2 (bbcs-addon.json)"
+---
+
 # BotBlocker Add-on Developer Skill
 
-Use this skill when creating, reviewing, debugging, packaging, or documenting BotBlocker Security add-ons.
+This skill is the orchestrator for the **BotBlocker Add-on Developer Kit**. It
+routes you to the right kit document for each task instead of restating it.
+Read the mapped doc before writing code.
+
+## Kit scope and wiring
+
+- All `docs/`, `tools/`, and `examples/` paths below are **relative to the kit
+  root** (the folder that contains this kit's `README.md`). The skill assumes
+  the kit repository is the working directory.
+- To register as an opencode skill: add the kit's `ai` directory to
+  `skills.paths` in `opencode.json`, or copy `ai/botblocker-addon-skill/` into
+  `.opencode/skills/`. Keep the full kit reachable so the referenced docs and
+  tools resolve.
+- This skill never edits BotBlocker core. It builds and reviews third-party
+  add-on packages only.
 
 ## Product context
 
-BotBlocker Security is a WordPress security plugin, anti-bot firewall, and Web Application Firewall. It protects real production traffic through request checks, rules, CAPTCHA layers, logs, live traffic monitoring, early-init protection, and add-on based extensions.
+BotBlocker Security is a WordPress anti-bot firewall and Web Application
+Firewall. It protects production traffic through request checks, rules, CAPTCHA
+layers, logs, live monitoring, early-init protection, and add-on extensions.
 
-Treat BotBlocker as a production security platform. Add-ons must extend protection, integrations, reporting, diagnostics, admin workflows, privacy notices, or safe automation without weakening BotBlocker core behavior.
+- Baseline: **BotBlocker Security `1.6.20`** (minimum version for the Add-on
+  API v2 system), WordPress `5.0+` (tested to `7.0`), PHP `7.4+`.
+- Add-ons must extend protection, integrations, reporting, diagnostics, admin
+  workflows, privacy notices, or safe automation **without weakening core**.
 
-Current baseline:
+## Runtime truth (memorize)
 
-- BotBlocker Security: `1.6.20+`
-- WordPress: `5.0+`, tested up to `7.0`
-- PHP: `7.4+`
-- Add-on format: Add-on API v2 with `bbcs-addon.json`
+- Installed add-ons are scanned and loaded from
+  `wp-content/uploads/botblocker/addons/{slug}` — **not** from this kit and
+  **not** from your source folder.
+- Delivery flow: build a source folder → ZIP it with exactly one root folder
+  named after the slug → upload in `BotBlocker -> Add-ons` → activate from the
+  Installed tab → configure in `BotBlocker -> Tools` when settings exist.
+- A normal active add-on `core` file is included **after** the main
+  request-check cycle. Only a `runtime.pre_run` `traffic_decision_provider`
+  participates **inside** the cycle. See `docs/botblocker-runtime-contract.md`.
 
-## Runtime truth
+## When to use
 
-BotBlocker scans installed add-ons from:
+Building Add-on API v2 packages; editing `bbcs-addon.json`; implementing core
+files, settings views, sanitizers, lifecycle callbacks, or feature providers;
+packaging/validating add-on ZIPs; reviewing compatibility with `1.6.20+`;
+preserving v1 compatibility when touching shared scanner/loader code.
 
-```text
-wp-content/uploads/BotBlocker/addons/{slug}
-```
+## Do NOT use for
 
-It does not load third-party add-ons directly from this skill, from the developer kit repository, or from `plugin/wp-content/plugins/botblocker-security/addons`.
-
-Required flow:
-
-1. Build a source folder.
-2. Package a ZIP with exactly one root folder.
-3. Upload it in `BotBlocker -> Add-ons`.
-4. Activate from the Installed tab.
-5. Configure from `BotBlocker -> Tools` when the add-on has settings.
-
-## Use for
-
-- Creating Add-on API v2 packages.
-- Updating `bbcs-addon.json`.
-- Implementing add-on core files.
-- Implementing settings views and sanitizers.
-- Implementing lifecycle callbacks.
-- Declaring feature providers.
-- Packaging ZIPs for BotBlocker upload.
-- Reviewing compatibility with BotBlocker `1.6.20+`.
-- Preserving v1 compatibility when touching shared scanner/loader code.
-
-## Do not use for
-
-- General WordPress plugin development unrelated to BotBlocker add-ons.
+- General WordPress plugin work unrelated to BotBlocker add-ons.
 - Editing BotBlocker core unless the user explicitly requests it.
-- Creating add-ons that disable, weaken, or silently bypass BotBlocker protections.
-- Creating add-ons that collect visitor personal data without clear purpose and documentation.
+- Add-ons that disable, weaken, or silently bypass BotBlocker protections.
+- Add-ons that collect visitor personal data without a clear, documented purpose.
 - Publishing credentials, private URLs, license keys, or production secrets.
 
-## Required discovery before code
+## Pre-flight: mandatory discovery
 
-Identify:
+Before writing any code, settle these. Ask the user when unknown:
 
-- slug
-- name
-- purpose
-- runtime surface: admin, frontend, request/headers, cron, API, diagnostics
-- whether BotBlocker request data is needed
-- whether traffic decisions can run after BotBlocker allows the request
-- whether the add-on requires in-cycle BotBlocker core hooks
-- minimum BotBlocker version
-- minimum PHP version
-- function/class prefix
-- option name
-- settings fields
-- sanitizer behavior
-- lifecycle needs
-- feature capability names
-- asset paths
-- icon path
-- help text and help links
-- admin and frontend test steps
+slug · name · purpose · runtime surface (admin / frontend / request-headers /
+cron / API / diagnostics) · whether BotBlocker request data is needed · whether
+decisions can run **after** BotBlocker allows the request, or must run
+**in-cycle** · minimum BotBlocker and PHP versions · function/class prefix ·
+option name · settings fields · sanitizer behavior · lifecycle needs · feature
+capability names · asset/icon paths · help text and links · admin/frontend test
+steps.
 
-Read or follow the local docs when available:
+## Reference map — read the doc, do not guess
 
-- `docs/botblocker-runtime-contract.md`
-- `docs/addon-api-v2.md`
-- `docs/botblocker-core-object.md`
-- `docs/botblocker-request-data.md`
-- `docs/botblocker-settings-reference.md`
-- `docs/traffic-and-redirect-addons.md`
-- `docs/core-hook-integration.md`
-- `docs/settings-contract.md`
-- `docs/settings-ui-patterns.md`
-- `docs/lifecycle-and-features.md`
-- `docs/code-quality-standard.md`
-- `docs/testing.md`
-- `docs/known-core-contract-gaps.md`
+| Task | Read |
+| --- | --- |
+| Scan/install/activate/load model, runtime dirs | `docs/botblocker-runtime-contract.md` |
+| Manifest schema, fields, validity, packaging | `docs/addon-api-v2.md` |
+| ZIP shape, upload flow, common upload errors | `docs/packaging-and-upload.md` |
+| Lifecycle callbacks, `$addon`/`$context`, features, `BotBlockerAddons` API | `docs/lifecycle-and-features.md` |
+| Settings save/read contract and option array | `docs/settings-contract.md` |
+| Settings tab layout, field wrappers, markup | `docs/settings-ui-patterns.md` |
+| Reading the live BotBlocker object safely | `docs/botblocker-core-object.md` |
+| Available visitor/request/decision fields | `docs/botblocker-request-data.md` |
+| Read-only core settings for decisions | `docs/botblocker-settings-reference.md` |
+| Post-check redirects vs pre-run providers | `docs/traffic-and-redirect-addons.md` |
+| In-cycle pre-run `traffic_decision_provider` contract | `docs/core-hook-integration.md` |
+| Required security/quality bar | `docs/code-quality-standard.md` |
+| Static / package / WordPress / asset / multisite tests | `docs/testing.md` |
+| Kit/core/runtime compatibility comparison | `docs/compatibility-matrix.md` |
+| Known core implementation gaps to verify | `docs/known-core-contract-gaps.md` |
+| Public links, banners, icons, screenshots | `docs/links-and-assets.md` |
 
-## Package contract
+Reference packages: `examples/acme-botblocker-sample` (canonical normal add-on)
+and `examples/acme-traffic-guard` (advanced pre-run traffic provider — use only
+when in-cycle decisions are truly required).
 
-Recommended v2 package:
+## Fast path
 
-```text
-{slug}/
-  index.php
-  bbcs-addon.json
-  {slug}.php
-  assets/
-    index.php
-    icon.svg
-    admin.js
-    frontend.js
-  inc/
-    index.php
-    core.php
-    settings.php
-  readme.txt
-```
+1. Copy `examples/acme-botblocker-sample` to a folder named with the final slug.
+2. Rename the folder, manifest `slug`, root PHP file, text domain, function
+   prefix, option name, handles, CSS classes, and JS globals.
+3. Define behavior in `inc/core.php`; admin controls in `inc/settings.php`.
+4. Declare every field under `settings.option`; implement the manifest sanitizer.
+5. For visitor/request data or traffic control, follow the mapped docs above.
+6. Validate the folder, package the ZIP, validate the ZIP, then upload and test.
 
-BotBlocker follows package-relative manifest paths. Real packages may place assets elsewhere, such as root `{slug}.svg` or `inc/frontend.js`, if the manifest and code point to those paths.
+## Essential patterns (full detail in the mapped docs)
 
-ZIP rule: exactly one top-level folder, and its name must equal the manifest `slug`.
+- **Manifest minimum** (`docs/addon-api-v2.md`): a valid package needs `slug`,
+  `name`, `version`, `requires_core`, and an existing `core` file. Always also
+  declare `schema: "2.0"`, `requires_php`, `description`, `main`, `assets.icon`,
+  and `assets.readme`.
+- **Settings field naming** (`docs/settings-contract.md`) — third-party v2 must
+  use the option array; plain names only work for BotBlocker's built-in core logic:
 
-## Manifest rules
+  ```php
+  <input type="hidden"   name="vendor_addon_settings[enabled]" value="0">
+  <input type="checkbox" name="vendor_addon_settings[enabled]" value="1">
+  ```
 
-Required fields:
+- **Asset URLs** (`docs/addon-api-v2.md`) — uploaded add-ons run outside the
+  plugin source; never use `plugin_dir_url()`:
 
-- `schema`
-- `slug`
-- `name`
-- `version`
-- `requires_core`
-- `core`
+  ```php
+  BotBlockerAddons::fileUrl( 'vendor-addon', 'assets/admin.js' );
+  ```
 
-Quality-required fields for normal add-ons:
+- **Lifecycle signature** (`docs/lifecycle-and-features.md`): every callback is
+  `function vendor_addon_event( array $addon, array $context, string $event, string $slug ): void`
+  and must be idempotent. Use your own prefixed function names.
 
-- `requires_php`
-- `author`
-- `description`
-- `main`
-- `settings.view` when settings UI exists
-- `settings.option` when settings save
-- `settings.sanitize` when settings save
-- `lifecycle.activate` when defaults are needed
-- `lifecycle.delete` when cleanup is intended
-- `features` when providing a capability
-- `assets.icon`
-- `assets.readme`
+## Hard rules (non-negotiable guardrails)
 
-Use `requires_core: 1.6.20` for new third-party packages unless the user explicitly targets and tests an older BotBlocker version.
+- Prefix every symbol: function, class, option, action, filter, transient, cron
+  hook, asset handle, JS global, and package-owned CSS class.
+- Guard every PHP file with `ABSPATH`; pre-run files may also require `BOTBLOCKER`.
+- Never echo from `inc/core.php` (or a pre-run file) during load.
+- Register WordPress hooks only when the add-on is active and should run.
+- Escape all output; sanitize every stored field in the declared sanitizer.
+- Use activation callbacks for defaults and delete callbacks for owned cleanup.
+- Never write into the BotBlocker plugin source directory; never assume the kit
+  repository exists in production.
+- Never read raw unsanitized `$_GET`/`$_POST`/`$_FILES`/`$_COOKIE`/`$_SERVER`.
+- Keep remote calls explicit, documented, timeout-bound, and optional.
+- Stay PHP 7.4 compatible (no `match`, enums, `readonly`, named args,
+  `str_contains`, typed properties in add-on style that targets 7.4).
 
-## Settings rules
+## Traffic add-ons: critical-risk gate
 
-Third-party v2 settings must use the manifest option array.
+A traffic add-on can redirect, allow, bypass, block, or challenge real
+production requests. Treat every decision as a security change.
 
-Correct:
-
-```php
-<input type="hidden" name="vendor_addon_settings[enabled]" value="0">
-<input type="checkbox" name="vendor_addon_settings[enabled]" value="1">
-```
-
-Wrong for third-party v2:
-
-```php
-<input type="checkbox" name="enabled" value="1">
-```
-
-Some first-party add-ons use plain field names because BotBlocker core has internal save logic. Do not copy that pattern for third-party add-ons.
-
-The settings view renders only controls and current values. It must not save data, mutate runtime state, call remote APIs, or run scans just because it was included.
-
-Match BotBlocker settings UI patterns from `docs/settings-ui-patterns.md`: start with the native help/info column, use `bbcs_settings_h3` group headings, use BotBlocker field wrapper classes, include hidden `0` values before checkboxes, and keep every input name under `settings.option`.
-
-## Coding rules
-
-- Prefix every function, class, option, action, filter, transient, cron hook, asset handle, JS global, and package-owned CSS class.
-- Guard every PHP file with `ABSPATH`; core files may also require `BOTBLOCKER`.
-- Never echo from `inc/core.php` during load.
-- Register hooks only when the add-on should run.
-- Escape all output in settings and frontend views.
-- Sanitize every setting in the manifest-declared sanitizer.
-- Use activation callbacks for defaults.
-- Use delete callbacks for package-owned cleanup only when intended.
-- Make lifecycle callbacks idempotent.
-- Use `bbcs_addon_file_url()` for add-on assets.
-- Do not use `plugin_dir_url()` for uploaded runtime add-ons.
-- Enqueue admin scripts only on relevant BotBlocker admin screens.
-- Enqueue frontend assets only when enabled and needed.
-- Use nonce and capability checks for custom admin actions.
-- Do not write into BotBlocker plugin source directories.
-- Do not assume the source repository exists in production.
-- Keep remote network calls explicit, documented, timeout-bound, and optional when practical.
-
-## BotBlocker data and traffic rules
-
-When an add-on needs visitor data, read from `BotBlocker::getInstance()` through a narrow helper and normalize values into an add-on-owned context array. Do not expose `get_bot_blocker_hive()` to public visitors.
-
-Traffic-management add-ons are critical-risk code. They can redirect, allow, bypass, block, or challenge real production requests inside BotBlocker's security flow. Treat every traffic decision as a security-sensitive change: default to disabled, default to dry-run, require staging tests, document rollback, and never generate an active redirect/block/bypass behavior casually.
-
-For redirect or traffic-management add-ons:
-
-- Use `docs/traffic-and-redirect-addons.md` for choosing post-check redirects versus pre-run traffic decisions.
-- Prefer post-check WordPress hooks unless the user explicitly needs in-cycle request decisions.
-- Use `examples/acme-traffic-guard` as the reference only for advanced traffic-management add-ons.
-- Redirect only requests BotBlocker already allowed unless the add-on explicitly implements the `traffic_decision_provider` pre-run contract.
-- Skip BotBlocker check/block/denied pages, admin, AJAX, cron, unsafe HTTP methods, payment callbacks, and verified legal bots by default.
-- Use `wp_safe_redirect()`, loop checks, same-site targets or an explicit host allowlist, and a dry-run setting.
-- If the add-on must decide before BotBlocker core blocks/challenges the request, require manifest `features: ["traffic_decision_provider"]`, `runtime.pre_run`, a readiness marker, and a registration callback as documented in `docs/core-hook-integration.md`.
-- Do not use `allow`, `bypass`, `block`, or `captcha` decisions for marketing routing. Those decisions require an explicit security or integration rationale.
-
-## Asset caveat
-
-BotBlocker installs runtime packages into a protected uploads directory. Static asset URLs returned by `bbcs_addon_file_url()` must be tested in a real WordPress install for HTTP 200. If the server blocks them, use inline output where practical or raise a BotBlocker core asset-delivery fix.
+- Prefer post-check WordPress hooks. Use the `runtime.pre_run`
+  `traffic_decision_provider` contract only when in-cycle decisions are truly
+  required (`docs/core-hook-integration.md`).
+- Ship disabled by default, dry-run (`log_only`) first, staging-tested, with
+  documented rollback.
+- Skip BotBlocker check/block/denied pages, admin, AJAX, cron, REST, unsafe HTTP
+  methods, payment callbacks, and verified legal bots by default.
+- Use `wp_safe_redirect()`, loop protection, and same-site or allowlisted hosts.
+- Do not use `allow`, `bypass`, `block`, or `captcha` decisions for marketing
+  routing — those require an explicit security/integration rationale.
 
 ## Review checklist
 
-- Root folder and manifest slug match.
-- ZIP archives the root folder, not loose files.
-- `bbcs-addon.json` is valid JSON.
-- Required manifest fields are present.
-- `requires_core` and `requires_php` are accurate.
-- `core`, `settings.view`, `assets.icon`, and `assets.readme` paths exist when declared.
-- Description explains purpose, runtime surface, and configurable behavior.
-- Settings view begins with a BotBlocker-style help block.
-- Settings inputs use `{settings.option}[field]` names.
-- Sanitizer normalizes every stored field.
-- Lifecycle callbacks are callable and safe to repeat.
-- Assets use `bbcs_addon_file_url()` and unique handles.
-- No unprefixed global symbols are introduced.
-- No raw unsanitized `$_GET`, `$_POST`, `$_FILES`, `$_COOKIE`, or `$_SERVER` values are used.
-- No direct file writes happen outside the documented package-owned data plan.
-- Package validates with `tools/validate-addon.php`.
-- Package installs, activates, saves settings, deactivates, deletes, and reinstalls on WordPress.
+- Root folder name equals manifest `slug`; ZIP archives the folder, not loose files.
+- `bbcs-addon.json` is valid JSON; required fields present; `requires_core`/`requires_php` accurate.
+- Declared `core`, `settings.view`, `assets.icon`, `assets.readme` paths exist.
+- `description` explains purpose, runtime surface, and configurable behavior.
+- Settings view opens with a BotBlocker help block; inputs use `{settings.option}[field]` names.
+- Sanitizer normalizes every stored field; lifecycle callbacks are callable and idempotent.
+- Assets use `BotBlockerAddons::fileUrl()` with unique handles; no `plugin_dir_url()`.
+- No unprefixed globals; no raw superglobal use; no writes outside the owned data plan.
+- Package passes `tools/validate-addon.php` (folder and ZIP).
+- Package installs, activates, saves settings, deactivates, deletes, and reinstalls cleanly.
 
-## Packaging commands
+## Packaging and validation
 
-Preferred PowerShell from kit root:
+From the kit root (see kit `README.md` for the full reference):
 
 ```powershell
+php  .\tools\validate-addon.php .\examples\acme-botblocker-sample
 .\tools\package-addon.ps1 -AddonPath .\examples\acme-botblocker-sample -DestinationPath .\dist\acme-botblocker-sample.zip
+php  .\tools\validate-addon.php .\dist\acme-botblocker-sample.zip
 ```
 
-Traffic example:
+Manual ZIP must archive the folder itself (one root folder):
+`Compress-Archive -Path .\{slug} -DestinationPath .\{slug}.zip -Force`
+(or `zip -r {slug}.zip {slug}`).
 
-```powershell
-.\tools\package-addon.ps1 -AddonPath .\examples\acme-traffic-guard -DestinationPath .\dist\acme-traffic-guard.zip
-```
+## Output format when creating an add-on
 
-Manual PowerShell from the parent directory:
-
-```powershell
-Compress-Archive -Path .\{slug} -DestinationPath .\{slug}.zip -Force
-```
-
-macOS/Linux:
-
-```bash
-zip -r {slug}.zip {slug}
-```
-
-## Expected answer format when creating an add-on
-
-Return:
-
-- file tree
-- manifest summary
-- runtime behavior summary
-- settings summary
-- lifecycle summary
-- feature providers
-- asset paths
-- packaging command
-- validation command
-- manual test steps
-- compatibility notes
+Return: file tree · manifest summary · runtime behavior summary · settings
+summary · lifecycle summary · feature providers · asset paths · packaging
+command · validation command · manual test steps · compatibility notes
+(target BotBlocker version, PHP version, and WordPress version).

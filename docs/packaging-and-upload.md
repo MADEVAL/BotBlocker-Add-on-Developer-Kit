@@ -129,7 +129,7 @@ Recommended pattern:
 Help text example:
 
 ```text
-Displays a lightweight first-party cookie notice for visitors and stores consent locally in a BotBlocker-named cookie.
+Displays a lightweight cookie consent notice for visitors and stores consent locally in a BotBlocker-named cookie.
 
 Use it for simple privacy notices where no external consent platform is required. Configure message text, policy link, button label, theme, position, and optional CSS.
 ```
@@ -152,7 +152,7 @@ Feature-specific footer links example:
 - Settings option uses a unique prefix.
 - Settings fields use the manifest `settings.option` array name.
 - The manifest `settings.sanitize` callback sanitizes every stored field.
-- JavaScript and CSS assets use `bbcs_addon_file_url()` rather than `plugin_dir_url()`.
+- JavaScript and CSS assets use `BotBlockerAddons::fileUrl()` rather than `plugin_dir_url()`.
 - Admin scripts are limited to BotBlocker admin screens when possible.
 - Frontend scripts are only enqueued when the add-on behavior requires them.
 - Activate, deactivate, delete, and update callbacks are safe to run more than once.

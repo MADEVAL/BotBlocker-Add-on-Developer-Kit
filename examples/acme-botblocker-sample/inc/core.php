@@ -48,8 +48,8 @@ function acme_bbcs_sample_sanitize_settings( $raw ): array {
 }
 
 function acme_bbcs_sample_asset_url( string $relative ): string {
-    return function_exists( 'bbcs_addon_file_url' )
-        ? bbcs_addon_file_url( 'acme-botblocker-sample', $relative )
+    return class_exists( 'BotBlockerAddons' )
+        ? BotBlockerAddons::fileUrl( 'acme-botblocker-sample', $relative )
         : '';
 }
 
@@ -157,7 +157,7 @@ function acme_bbcs_sample_enqueue_frontend_assets(): void {
 }
 
 function acme_bbcs_sample_boot(): void {
-    if ( function_exists( 'bbcs_is_addon_active' ) && ! bbcs_is_addon_active( 'acme-botblocker-sample' ) ) {
+    if ( class_exists( 'BotBlockerAddons' ) && ! BotBlockerAddons::isActive( 'acme-botblocker-sample' ) ) {
         return;
     }
 

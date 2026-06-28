@@ -20,8 +20,7 @@ This file collects public BotBlocker links and WordPress.org hosted image assets
 - Advanced view: https://wordpress.org/plugins/botblocker-security/advanced/
 - Support forum: https://wordpress.org/support/plugin/botblocker-security/
 - Reviews: https://wordpress.org/support/plugin/botblocker-security/reviews/
-- Current download: https://downloads.wordpress.org/plugin/botblocker-security.1.6.20.zip
-- Trunk download: https://downloads.wordpress.org/plugin/botblocker-security.zip
+- Latest release download: https://downloads.wordpress.org/plugin/botblocker-security.zip
 - Author profile: https://profiles.wordpress.org/globusstudio/
 - Contributor profile, Andrii Lukashevych: https://profiles.wordpress.org/alukashevych/
 - Contributor profile, Aleksander Kinakh: https://profiles.wordpress.org/alexandrkinakh/
@@ -68,7 +67,7 @@ Use WordPress.org hosted media for public documentation and repository visuals.
 
 Verified from WordPress.org plugin metadata during preparation:
 
-- Version: `1.6.20`
+- Minimum version for the Add-on API v2 system: `1.6.20`
 - Requires WordPress: `5.0` or newer
 - Tested up to: `7.0`
 - Requires PHP: `7.4` or newer

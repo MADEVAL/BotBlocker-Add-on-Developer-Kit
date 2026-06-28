@@ -25,19 +25,20 @@ BotBlocker does not load every active add-on before the engine starts. It loads 
 Implemented shape:
 
 ```php
+BotBlockerInstall::checkInstall();
 $plugin = new Cyber_Secure_Botblocker();
-bbcs_include_active_v2_addons_pre_run();
+BotBlockerAddons::includePreRunAddons();
 $plugin->run();
 
-bbcs_include_active_addons();
+BotBlockerAddons::includeAll();
 ```
 
-This happens after `bbcs_check_install()` and after `new Cyber_Secure_Botblocker()` has loaded BotBlocker classes, but before `$plugin->run()` calls `BotBlocker::initialize()`.
+This happens after `BotBlockerInstall::checkInstall()` and after `new Cyber_Secure_Botblocker()` has loaded BotBlocker classes, but before `$plugin->run()` calls `BotBlocker::initialize()`.
 
 Compatibility requirement:
 
 - Pre-run files must be separate, small files such as `inc/pre-run.php`.
-- Normal `core` files still load late through `bbcs_include_active_addons()`.
+- Normal `core` files still load late through `BotBlockerAddons::includeAll()`.
 - Pre-run files must not echo during load.
 - Pre-run files must register a provider and return.
 - Pre-run files must not perform remote calls, long scans, package updates, migrations, or expensive diagnostics.
@@ -100,27 +101,37 @@ array(
 )
 ```
 
-Supported actions:
+Supported actions and exact core behavior:
 
-| Action | Required fields | Core behavior |
+| Action | Typical fields | Core behavior (from `BotBlockerAddonDecisionTrait::execute_addon_traffic_decision()`) |
 | --- | --- | --- |
-| `allow` | `reason` optional | Mark the request allowed and stop BotBlocker checks. |
-| `bypass` | `reason` optional | Stop BotBlocker checks as an integration bypass. |
-| `block` | `code`, `reason` | Call the denied flow and stop. |
-| `captcha` | `reason` | Call the BotBlocker check/CAPTCHA flow and stop. |
-| `redirect` | `url`, `status` | Send `wp_safe_redirect()` and exit. |
-| `log_only` | `code`, `reason` | Log and continue normal BotBlocker checks. |
+| `allow` | `reason` optional | Sets visitor type to human, records `reason`, fires `bbcs_botblocker_allowed_request`, stops BotBlocker checks for this request. |
+| `bypass` | `reason` optional | Identical to `allow`. It is a semantic alias for an integration bypass. |
+| `block` | `code`, `reason` | Calls `redirect_to_denied( $code, $reason )` and stops. |
+| `captcha` | `reason` | If the visitor already holds a valid verification cookie (`is_verified()`), the challenge is skipped and BotBlocker continues normally. Otherwise calls `redirect_to_dark( $reason )` (a DARK challenge) and stops. |
+| `redirect` | `url`, `status` | If `url` is empty or headers were already sent, the decision is abandoned and BotBlocker continues normally. Otherwise fires `bbcs_botblocker_redirected_request`, calls `wp_safe_redirect( $url, $status )`, and `exit`s. |
+| `log_only` | `code`, `reason` | Calls `BotBlockerStore::storeData( $reason, $code )` when available, fires `bbcs_botblocker_log_only_request`, then returns control so BotBlocker continues normal checks. It never stops the request. |
 
 Use `log_only` for dry-run and rollout verification. Use `redirect` only after loop protection and safe-target validation are in place. Use `allow`, `bypass`, `block`, and `captcha` only for security policy or integration requirements that have been explicitly reviewed.
 
-Core must validate the decision:
+### Field normalization
 
-- `action` must be from the allowlist.
-- `source` must be sanitized.
-- `reason` must be sanitized text.
-- `code` must be a valid BotBlocker reason code or safe HTTP status depending on action.
-- `url` must pass safe redirect validation for redirects.
-- unknown fields must be ignored.
+Core normalizes every returned decision through `normalize_addon_traffic_decision()` before it is executed:
+
+- `action` is lowercased with `sanitize_key()` and must be one of `allow`, `bypass`, `block`, `captcha`, `redirect`, `log_only`. Any other value (or a missing/empty `action`) makes the whole decision void, and core moves on to the next provider.
+- `status` accepts only `301`, `302`, `303`, `307`, `308`. Any other value is coerced to `302`. The default is `302`.
+- `source` is passed through `sanitize_key()`. When empty it falls back to the provider slug, then to the literal `addon`.
+- `reason` is passed through `sanitize_text_field()`. When empty at execution time it becomes `BotBlocker add-on traffic decision`.
+- `code` is cast to an integer. The default is `901`. It is used as the BotBlocker reason code for `block` and `log_only`.
+- `url` is passed through `esc_url_raw()` and validated again by `wp_safe_redirect()`.
+- A `stage` key is injected by core; unknown fields you add are ignored.
+
+### Provider order and short-circuit
+
+- Providers run in ascending `priority` order (range `-9999`..`9999`, default `10`); ties are broken by slug, alphabetically.
+- The first provider that returns a decision which actually stops the request (`allow`, `bypass`, `block`, a fired `redirect`, or an unverified `captcha`) wins. Core stops calling further providers and further stages for that request.
+- A `log_only` decision, a voided decision, or a `null` return does not stop iteration, so later providers (and the `bbcs_botblocker_traffic_decision` filter) still run.
+- If a provider callback throws, core catches it, fires `bbcs_botblocker_traffic_decision_error`, and continues with the next provider. A throwing provider never blocks traffic by accident.
 
 ## Example pre-run provider
 
@@ -128,7 +139,7 @@ Core must validate the decision:
 define( 'VENDOR_TRAFFIC_PRE_RUN_READY', true );
 
 function vendor_traffic_pre_run_register( array $addon, array $context, string $event, string $slug ): void {
-    bbcs_register_traffic_decision_provider( $slug, 'vendor_traffic_decision', 10 );
+    BotBlockerAddons::registerTrafficDecisionProvider( $slug, 'vendor_traffic_decision', 10 );
 }
 
 function vendor_traffic_decision( BotBlocker $bbcs, string $stage, array $provider ): ?array {
@@ -167,7 +178,7 @@ The implemented core entry point is `apply_addon_traffic_decisions( $stage )`. I
 Add-ons register through:
 
 ```php
-bbcs_register_traffic_decision_provider( 'vendor-traffic', 'vendor_traffic_decision', 20 );
+BotBlockerAddons::registerTrafficDecisionProvider( 'vendor-traffic', 'vendor_traffic_decision', 20 );
 ```
 
 Provider callback signature:

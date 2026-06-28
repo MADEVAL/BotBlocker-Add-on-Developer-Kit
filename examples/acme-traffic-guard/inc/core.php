@@ -6,8 +6,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/shared.php';
 
 function acme_bbcs_traffic_guard_asset_url( string $relative ): string {
-    return function_exists( 'bbcs_addon_file_url' )
-        ? bbcs_addon_file_url( 'acme-traffic-guard', $relative )
+    return class_exists( 'BotBlockerAddons' )
+        ? BotBlockerAddons::fileUrl( 'acme-traffic-guard', $relative )
         : '';
 }
 
@@ -53,7 +53,7 @@ function acme_bbcs_traffic_guard_admin_notice(): void {
 }
 
 function acme_bbcs_traffic_guard_boot(): void {
-    if ( function_exists( 'bbcs_is_addon_active' ) && ! bbcs_is_addon_active( 'acme-traffic-guard' ) ) {
+    if ( class_exists( 'BotBlockerAddons' ) && ! BotBlockerAddons::isActive( 'acme-traffic-guard' ) ) {
         return;
     }
 

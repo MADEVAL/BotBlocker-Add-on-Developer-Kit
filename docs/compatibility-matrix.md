@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-This matrix maps the developer kit against the current BotBlocker Security add-on implementation.
+This matrix maps the developer kit against the BotBlocker Security add-on implementation.
 
 ## Runtime surfaces
 
@@ -9,9 +9,7 @@ This matrix maps the developer kit against the current BotBlocker Security add-o
 | Third-party source package | Any developer workspace | Edited source code | Must become a valid v2 ZIP |
 | Developer kit sample | `examples/acme-botblocker-sample` | Canonical third-party v2 template | Recommended |
 | Developer kit traffic sample | `examples/acme-traffic-guard` | Advanced pre-run traffic decision provider template | Critical-risk; use only when needed |
-| First-party source add-ons | `plugin/wp-content/plugins/botblocker-security/addons` | BotBlocker-owned add-ons and marketplace source | Useful, but not always third-party-safe |
-| Runtime add-ons | `wp-content/uploads/BotBlocker/addons` | Installed, scanned, activated packages | Authoritative |
-| Marketplace builder input | `plugin/wp-content/plugins/botblocker-security/addons` | Source for `bbcs-addons` manager | Internal/legacy |
+| Runtime add-ons | `wp-content/uploads/botblocker/addons` | Installed, scanned, activated packages | Authoritative |
 | BotBlocker object read access | `BotBlocker::getInstance()` | Final request state for add-ons | Read-only; timing-limited |
 | In-cycle traffic decisions | Pre-run `traffic_decision_provider` plus `BotBlocker::run()` stages | Allow/block/captcha/redirect/bypass/log-only before core final response | Supported only with explicit pre-run opt-in |
 
@@ -19,7 +17,7 @@ This matrix maps the developer kit against the current BotBlocker Security add-o
 
 | Requirement | Core behavior | Kit status | Action |
 | --- | --- | --- | --- |
-| `bbcs-addon.json` in root | Parsed by `bbcs_parse_addon_manifest()` | Documented | Keep |
+| `bbcs-addon.json` in root | Parsed by `BotBlockerAddons::parseManifest()` | Documented | Keep |
 | Root folder equals slug | Enforced by upload validation and manifest normalization | Documented | Keep |
 | `requires_core` present | Required and enforced | Documented | Keep |
 | `requires_php` | Enforced when declared | Documented | Keep recommended |
@@ -33,13 +31,12 @@ This matrix maps the developer kit against the current BotBlocker Security add-o
 
 ## Baseline versions
 
-| Package type | Observed baseline | Recommended baseline |
-| --- | --- | --- |
-| New third-party v2 package | `1.6.20+` | `1.6.20+` |
-| Developer kit sample | `1.6.20` | `1.6.20` |
-| Bundled first-party add-ons | commonly `1.6.15` | Internal only |
-| PHP | `7.4+` | `7.4+` |
-| WordPress | `5.0+`, tested to `7.0` | `5.0+` |
+| Package type | Recommended baseline |
+| --- | --- |
+| New third-party v2 package | `1.6.20+` |
+| Developer kit sample | `1.6.20` |
+| PHP | `7.4+` |
+| WordPress | `5.0+`, tested to `7.0` |
 
 ## Settings patterns
 
@@ -47,18 +44,18 @@ This matrix maps the developer kit against the current BotBlocker Security add-o
 | --- | --- | --- |
 | Manifest option array | `acme_bbcs_sample_settings[enabled]` | Required/recommended |
 | Third-party v2 option array | `vendor_addon_settings[enabled]` | Required/recommended |
-| First-party legacy plain field | `disable_emojis` | Do not copy for third-party v2 |
-| Shared BotBlocker option | `botblocker_tools_core_settings` | Internal first-party only |
+| BotBlocker built-in plain field | `disable_emojis` | Do not copy for third-party v2 |
+| Shared BotBlocker option | `botblocker_tools_core_settings` | Internal/built-in only |
 
-Third-party packages must not rely on BotBlocker core's hardcoded first-party option processing. They should use `settings.option` and render every field under that option array.
+Third-party packages must not rely on BotBlocker core's hardcoded built-in option processing. They should use `settings.option` and render every field under that option array.
 
 ## Asset patterns
 
 | Pattern | Example | Status |
 | --- | --- | --- |
-| Runtime asset helper | `bbcs_addon_file_url( 'slug', 'assets/admin.js' )` | Required for uploaded add-ons |
+| Runtime asset helper | `BotBlockerAddons::fileUrl( 'slug', 'assets/admin.js' )` | Required for uploaded add-ons |
 | Source plugin URL | `plugin_dir_url( __FILE__ )` | Wrong for uploaded add-ons |
-| Direct uploads URL | `bbcs_addons_url() . 'slug/file.svg'` | Works in some first-party code, but less safe than helper |
+| Direct uploads URL | `BotBlockerMultisite::getAddonsUrl() . 'slug/file.svg'` | Works but less safe than the helper |
 | Inline style/script | `wp_add_inline_style()` | Valid when asset URL delivery is blocked or unnecessary |
 
 ## Lifecycle support
@@ -89,8 +86,6 @@ Traffic add-ons are critical-risk code. Prefer post-check hooks for ordinary red
 
 | Mismatch | Impact | Resolution |
 | --- | --- | --- |
-| First-party add-ons use internal plain settings fields | AI may copy an invalid third-party save pattern | Document as internal only |
-| First-party source lives in plugin directory, runtime scan lives in uploads | Developers may test the wrong folder | Document three-location model |
-| Marketplace builder parses root PHP headers, not v2 manifest | Marketplace publishing can diverge from v2 metadata | Track as core/tooling gap |
+| BotBlocker built-in options use plain settings fields | AI may copy an invalid third-party save pattern | Documented in settings-contract |
 | Protected uploads may block static asset URLs | Frontend/admin JS or icons may fail in some servers | Require HTTP 200 asset test; track core delivery gap |
 | Normal active v2 add-ons load after the main request-check cycle | Generic add-ons cannot make in-cycle traffic decisions | Use post-check pattern or explicit `traffic_decision_provider` pre-run contract |

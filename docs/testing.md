@@ -25,7 +25,7 @@ Expected:
 - required paths exist
 - PHP files have no syntax errors
 - settings fields use `settings.option[field]`
-- assets use `bbcs_addon_file_url()`
+- assets use `BotBlockerAddons::fileUrl()`
 - no `plugin_dir_url()` usage in add-on code
 
 ## Package check
@@ -73,7 +73,7 @@ Expected:
 
 ## Asset delivery test
 
-For every declared icon, JS, CSS, or image URL returned by `bbcs_addon_file_url()`:
+For every declared icon, JS, CSS, or image URL returned by `BotBlockerAddons::fileUrl()`:
 
 1. Open the URL in a browser while logged in and logged out.
 2. Confirm the response is HTTP 200.
@@ -129,7 +129,7 @@ When supporting multisite:
 
 - test normal site admin activation
 - test network-active BotBlocker
-- verify capability checks use `bbcs_can_manage()` when available
+- verify capability checks use `current_user_can( 'manage_options' )` or an equivalent
 - verify options are intentionally site-level or network-level
 - verify runtime paths resolve on the correct site
 

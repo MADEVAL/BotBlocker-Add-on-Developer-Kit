@@ -243,17 +243,17 @@ These helpers are available after BotBlocker core helpers are loaded:
 
 | Helper | Use |
 | --- | --- |
-| `bbcs_addon_file_url( $slug, $relative )` | Build runtime asset URL for uploaded add-on files. |
-| `bbcs_is_addon_active( $slug )` | Check active state. |
-| `bbcs_get_active_addons()` | Read active add-on slugs. |
-| `bbcs_scan_addons()` | Read normalized installed add-on metadata. |
-| `bbcs_has_active_addon_feature( $feature )` | Check active feature declaration. |
-| `bbcs_get_addons_by_feature( $feature )` | Get active add-ons declaring a feature. |
-| `bbcs_data_dir()` | BotBlocker protected data directory. Read only unless core API says otherwise. |
-| `bbcs_addons_dir()` | BotBlocker runtime add-ons directory. |
-| `bbcs_addons_url()` | Runtime add-ons base URL. |
-| `bbcs_netMatch( $network, $ip )` | Check IP/CIDR style match. |
-| `bbcs_getPTR( $ip, $time, $ttl )` | PTR lookup with cache behavior. |
+| `BotBlockerAddons::fileUrl( $slug, $relative )` | Build runtime asset URL for uploaded add-on files. |
+| `BotBlockerAddons::isActive( $slug )` | Check active state. |
+| `BotBlockerAddons::getActive()` | Read active add-on slugs. |
+| `BotBlockerAddons::scanAll()` | Read normalized installed add-on metadata. |
+| `BotBlockerAddons::hasActiveFeature( $feature )` | Check active feature declaration. |
+| `BotBlockerAddons::getByFeature( $feature )` | Get active add-ons declaring a feature. |
+| `BotBlockerMultisite::getDataDir()` | BotBlocker protected data directory. Read only unless core API says otherwise. |
+| `BotBlockerMultisite::getAddonsDir()` | BotBlocker runtime add-ons directory. |
+| `BotBlockerMultisite::getAddonsUrl()` | Runtime add-ons base URL. |
+| `BotBlockerIp::netMatch( $network, $ip )` | Check IP/CIDR style match. |
+| `BotBlockerIp::getPtr( $ip, $time, $ttl )` | PTR lookup with cache behavior. |
 | `bbcs_codeList( $code )` | Get BotBlocker log code metadata. |
 
 Avoid writing to BotBlocker core data files or tables unless the add-on is explicitly designed and tested as a core-management extension.

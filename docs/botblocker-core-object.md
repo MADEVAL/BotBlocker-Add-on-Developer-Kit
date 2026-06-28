@@ -51,7 +51,7 @@ Do not expose the full hive to public visitors. It can contain operational detai
 
 ## Current v2 timing
 
-In BotBlocker Security `1.6.20`, `bbcs_include_active_addons()` runs after `$botBlocker->initialize()` in the normal `plugins_loaded` boot flow.
+In BotBlocker Security `1.6.20` and later, `BotBlockerAddons::includeAll()` runs after `$botBlocker->initialize()` in the normal `plugins_loaded` boot flow.
 
 Practical meaning:
 

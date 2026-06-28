@@ -10,9 +10,9 @@ define( 'ACME_BBCS_TRAFFIC_GUARD_PRE_RUN_READY', true );
 function acme_bbcs_traffic_guard_pre_run_register( array $addon, array $context, string $event, string $slug ): void {
     unset( $addon, $context, $event );
 
-    if ( function_exists( 'bbcs_register_traffic_decision_provider' ) ) {
-        bbcs_register_traffic_decision_provider( $slug, 'acme_bbcs_traffic_guard_decide', 20 );
-    }
+	if ( class_exists( 'BotBlockerAddons' ) ) {
+		BotBlockerAddons::registerTrafficDecisionProvider( $slug, 'acme_bbcs_traffic_guard_decide', 20 );
+	}
 }
 
 function acme_bbcs_traffic_guard_decide( BotBlocker $bbcs, string $stage, array $provider ): ?array {

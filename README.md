@@ -13,7 +13,7 @@ BotBlocker Security is a WordPress anti-bot firewall and proactive protection pl
 - PHP: `7.4+`
 - Add-on format: Add-on API v2 with `bbcs-addon.json`
 
-Some bundled first-party BotBlocker add-ons declare `requires_core: 1.6.15`. That is internal compatibility history. New third-party add-ons should use `1.6.20+` unless they are explicitly tested against an older BotBlocker build.
+`1.6.20` is the minimum BotBlocker version required for the Add-on API v2 system. New third-party add-ons should target `1.6.20+`.
 
 ## What Is Inside
 
@@ -32,7 +32,7 @@ Some bundled first-party BotBlocker add-ons declare `requires_core: 1.6.15`. Tha
 - `docs/code-quality-standard.md`: required security and code quality bar.
 - `docs/packaging-and-upload.md`: ZIP shape, upload flow, common upload errors.
 - `docs/testing.md`: static, package, WordPress, lifecycle, asset, multisite, and security tests.
-- `docs/compatibility-matrix.md`: kit/core/first-party/runtime compatibility comparison.
+- `docs/compatibility-matrix.md`: kit/core/runtime compatibility comparison.
 - `docs/known-core-contract-gaps.md`: known implementation gaps to verify or fix in BotBlocker core.
 - `tools/validate-addon.php`: static validator for folders and ZIP packages.
 - `tools/package-addon.ps1`: PowerShell packager that builds a correct one-root-folder ZIP.
@@ -40,14 +40,14 @@ Some bundled first-party BotBlocker add-ons declare `requires_core: 1.6.15`. Tha
 
 ## Critical Runtime Model
 
-BotBlocker does not load third-party add-ons from this repository and does not load them directly from `plugin/wp-content/plugins/botblocker-security/addons`.
+BotBlocker does not load third-party add-ons from this repository or from your source folder. They run only from the WordPress uploads runtime directory after they are uploaded and installed.
 
 The real runtime flow is:
 
 1. Developer builds a source folder named like the add-on slug.
 2. Developer creates a ZIP containing exactly that one root folder.
 3. Administrator uploads the ZIP in `BotBlocker -> Add-ons`.
-4. BotBlocker validates the ZIP and installs it into `wp-content/uploads/BotBlocker/addons/{slug}`.
+4. BotBlocker validates the ZIP and installs it into `wp-content/uploads/botblocker/addons/{slug}`.
 5. The add-on stays inactive until the administrator activates it.
 6. Active compatible add-ons are loaded from the runtime uploads directory.
 
@@ -175,6 +175,7 @@ Required fields:
 Quality-required fields for normal add-ons:
 
 - `requires_php`
+- `author`
 - `description`
 - `main`
 - `settings.view` when an admin UI exists
@@ -192,13 +193,13 @@ Third-party v2 settings must use the manifest option array:
 <input type="checkbox" name="vendor_addon_settings[enabled]" value="1">
 ```
 
-Do not copy first-party legacy plain-field settings such as:
+Do not copy BotBlocker's built-in plain-field settings such as:
 
 ```php
 <input type="checkbox" name="disable_emojis" value="1">
 ```
 
-Those fields work only because BotBlocker core has hardcoded first-party save logic. Third-party add-ons are saved by `bbcs_save_active_addon_settings_from_post()` through `settings.option`.
+Those fields work only because BotBlocker core has hardcoded internal save logic for its own built-in options. Third-party add-ons are saved by `BotBlockerAddons::saveSettingsFromPost()` through `settings.option`.
 
 ## Settings UI Pattern
 
@@ -284,8 +285,8 @@ Use:
 
 ```php
 function vendor_addon_asset_url( string $relative ): string {
-    return function_exists( 'bbcs_addon_file_url' )
-        ? bbcs_addon_file_url( 'vendor-addon', $relative )
+    return class_exists( 'BotBlockerAddons' )
+        ? BotBlockerAddons::fileUrl( 'vendor-addon', $relative )
         : '';
 }
 ```
@@ -328,7 +329,7 @@ Use `examples/acme-traffic-guard` only for advanced traffic-management add-ons t
 - BotBlocker Tools settings under `settings.option`
 - recent match logging with hashed IP values
 
-Do not blindly copy first-party add-ons from `plugin/wp-content/plugins/botblocker-security/addons` for third-party packages. They are useful for BotBlocker behavior patterns, but some use internal settings and marketplace conventions.
+Both kit examples are the canonical third-party references. Copy and adapt them rather than any other add-on source.
 
 ## Official Links
 

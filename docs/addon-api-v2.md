@@ -17,16 +17,14 @@ Read this document together with:
 
 ## Runtime locations
 
-BotBlocker separates source packages from runtime packages.
+BotBlocker separates your source package from the runtime package.
 
-- Source package: your repository or build output.
-- Runtime package: BotBlocker protected uploads add-ons directory.
-- Active add-ons option: `botblocker_active_addons`.
-- Scanner entry point: `bbcs_scan_addons()`.
+- Source package: your repository or build output. You edit here.
+- Runtime package: `wp-content/uploads/botblocker/addons/{slug}` — the protected uploads directory BotBlocker scans and loads add-ons from. Your ZIP is validated and copied here on upload.
+- Active add-ons option: `bbcs_active_addons`.
+- Scanner entry point: `BotBlockerAddons::scanAll()`.
 
-An uploaded package is installed inactive. The administrator reviews and activates it from the Installed tab.
-
-The bundled first-party source folder `plugin/wp-content/plugins/botblocker-security/addons` is not the public third-party runtime location. It is useful for studying BotBlocker-owned add-ons and marketplace source conventions, but uploaded third-party packages are validated and copied into the protected uploads runtime directory.
+An uploaded package is installed inactive. The administrator reviews and activates it from the Installed tab. BotBlocker never loads an add-on from your source repository — only from the uploads runtime directory after upload.
 
 ## Minimal package
 
@@ -97,6 +95,8 @@ File name: `bbcs-addon.json`.
 - `requires_core`: minimum BotBlocker version.
 - `core`: PHP file loaded for active runtime behavior and callbacks.
 
+Always declare these fields in a well-formed v2 manifest. Internally, BotBlocker marks a package valid only when `slug`, `name`, `version`, and `requires_core` are non-empty and the `core` file exists on disk; `schema` defaults to `2.0` when it is absent, so a missing `schema` does not by itself make a package invalid. Declaring `schema: "2.0"` explicitly is still expected by this kit so manifests are unambiguous and forward-compatible; the validator emits a warning when it is missing or not `2.0`.
+
 ## Optional fields
 
 - `requires_php`: minimum PHP version.
@@ -124,7 +124,7 @@ The `description` field appears on the Add-ons card. Keep it useful in one sente
 Example:
 
 ```text
-Displays a lightweight first-party cookie consent banner with editable notice text, policy link, theme, position, and safe BotBlocker settings storage.
+Displays a lightweight cookie consent banner with editable notice text, policy link, theme, position, and safe BotBlocker settings storage.
 ```
 
 ## Root metadata file
@@ -233,7 +233,7 @@ if ( ! defined( 'ABSPATH' ) || ! defined( 'BOTBLOCKER' ) ) {
 define( 'VENDOR_TRAFFIC_PRE_RUN_READY', true );
 
 function vendor_traffic_pre_run_register( array $addon, array $context, string $event, string $slug ): void {
-    bbcs_register_traffic_decision_provider( $slug, 'vendor_traffic_decide', 20 );
+    BotBlockerAddons::registerTrafficDecisionProvider( $slug, 'vendor_traffic_decide', 20 );
 }
 
 function vendor_traffic_decide( BotBlocker $bbcs, string $stage, array $provider ): ?array {
@@ -270,7 +270,14 @@ function vendor_addon_sanitize_settings( $raw ): array {
 }
 ```
 
-If no sanitize callback is declared, BotBlocker applies conservative recursive sanitization.
+If no `settings.sanitize` callback is declared, BotBlocker falls back to `BotBlockerAddons::sanitizeSettingsValue()`. That fallback is intentionally conservative and recursive:
+
+- Arrays: every key is passed through `sanitize_key()` and every value is sanitized recursively with the same rules.
+- Booleans: stored as `1` or `0`.
+- Numeric values: passed through `sanitize_text_field()`.
+- All other strings: passed through `sanitize_textarea_field()`.
+
+The fallback never enforces an allowlist of keys, never type-casts to your intended shape, and never drops unexpected fields. A quality add-on should always declare its own `settings.sanitize` callback so unknown keys are rejected and each field is normalized to the exact type it expects.
 
 ### Settings save flow
 
@@ -292,7 +299,7 @@ Field names must be option-array names:
 <input type="text" name="vendor_addon_settings[label]" value="<?php echo esc_attr( $settings['label'] ?? '' ); ?>">
 ```
 
-Do not copy first-party plain field settings into third-party v2 add-ons. Fields like `disable_emojis` or `security_headers_enable` are saved by BotBlocker core's internal first-party logic, not by the generic third-party v2 settings flow.
+Do not copy BotBlocker's built-in plain field settings into third-party v2 add-ons. Fields like `disable_emojis` or `security_headers_enable` are saved by BotBlocker core's internal hardcoded logic, not by the generic third-party v2 settings flow.
 
 Use lifecycle callbacks for defaults and cleanup:
 
@@ -306,7 +313,7 @@ function vendor_addon_activate( array $addon, array $context, string $event, str
 
 ### Settings help block
 
-`settings.view` is included inside the add-on tab on `BotBlocker -> Tools`. Place add-on help inside that view, before controls. Use the native BotBlocker info-card pattern so the page looks consistent with first-party add-ons.
+`settings.view` is included inside the add-on tab on `BotBlocker -> Tools`. Place add-on help inside that view, before controls. Use the native BotBlocker info-card pattern so the page looks consistent with BotBlocker's own settings pages.
 
 Recommended order:
 
@@ -353,6 +360,8 @@ function vendor_addon_activate( array $addon, array $context, string $event, str
 }
 ```
 
+Every lifecycle callback receives the same four arguments: the normalized `$addon` metadata array, an event `$context` array, the `$event` name, and the add-on `$slug`. The exact shape of `$addon` and the known `$context['reason']` values are documented in `lifecycle-and-features.md`. A callback that internally references a built-in PHP function name is skipped, so always use your own prefixed callback names.
+
 BotBlocker also fires generic lifecycle actions:
 
 ```php
@@ -380,7 +389,7 @@ Manifest:
 Runtime check:
 
 ```php
-if ( bbcs_has_active_addon_provider( 'sample_response_header' ) ) {
+if ( BotBlockerAddons::hasActiveFeature( 'sample_response_header' ) ) {
     // A compatible active provider is available.
 }
 ```
@@ -389,12 +398,12 @@ Legacy add-ons can expose compatibility through filters when needed.
 
 ## JavaScript and CSS assets
 
-Uploaded add-ons run from BotBlocker runtime storage, not from the BotBlocker plugin source folder. Do not use `plugin_dir_url()` for add-on assets. Use `bbcs_addon_file_url()`.
+Uploaded add-ons run from BotBlocker runtime storage, not from the BotBlocker plugin source folder. Do not use `plugin_dir_url()` for add-on assets. Use `BotBlockerAddons::fileUrl()`.
 
 ```php
 function vendor_addon_asset_url( string $relative ): string {
-  return function_exists( 'bbcs_addon_file_url' )
-    ? bbcs_addon_file_url( 'vendor-addon', $relative )
+  return class_exists( 'BotBlockerAddons' )
+    ? BotBlockerAddons::fileUrl( 'vendor-addon', $relative )
     : '';
 }
 ```
@@ -464,4 +473,4 @@ legacy-addon/
   readme.txt
 ```
 
-Do not remove legacy compatibility from shared tooling. Existing first-party and third-party add-ons may still depend on it.
+Do not remove legacy compatibility from shared tooling. Existing add-ons may still depend on it.

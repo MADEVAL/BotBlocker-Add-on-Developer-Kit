@@ -3,6 +3,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+require_once __DIR__ . '/shared.php';
+
 $settings = function_exists( 'acme_bbcs_traffic_guard_settings' ) ? acme_bbcs_traffic_guard_settings() : array();
 $option   = 'acme_bbcs_traffic_guard_settings';
 $icon_url = function_exists( 'acme_bbcs_traffic_guard_asset_url' ) ? acme_bbcs_traffic_guard_asset_url( 'assets/icon.svg' ) : '';

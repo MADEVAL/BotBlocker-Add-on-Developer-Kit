@@ -209,7 +209,6 @@ Add-ons should use their own logging toggle and avoid writing to BotBlocker logs
 | `redis_db` | `0` | Redis DB index. |
 | `redis_password` | empty | Redis password. |
 | `redis_prefix` | `bb_` | Redis key prefix. |
-| `use_transients_for_cloud` | `0` | Uses WP transients for cloud data cache. |
 
 Never expose passwords or backend host details in frontend output.
 

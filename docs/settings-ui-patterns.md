@@ -184,7 +184,7 @@ Good help copy answers:
 Example:
 
 ```text
-Displays a lightweight first-party notice for visitors and stores acknowledgement locally in a BotBlocker-named cookie.
+Displays a lightweight cookie consent notice for visitors and stores acknowledgement locally in a BotBlocker-named cookie.
 
 Use it for simple notices where no external consent platform is required. Configure message text, policy link, button label, theme, position, and optional CSS.
 ```

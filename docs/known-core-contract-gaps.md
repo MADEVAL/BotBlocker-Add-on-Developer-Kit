@@ -1,12 +1,12 @@
 # Known Core Contract Gaps
 
-These are known mismatches between the public add-on kit and the current BotBlocker Security 1.6.20 codebase.
+These are known mismatches between the public add-on kit and the BotBlocker Security codebase (`1.6.20` or later, the minimum version required for the Add-on API v2 system).
 
 ## Runtime static assets may be blocked
 
 BotBlocker installs add-ons into a protected uploads directory and writes `.htaccess`/`web.config` files that deny direct web access.
 
-At the same time, v2 docs and examples use `bbcs_addon_file_url()` for icons, JavaScript, CSS, and images under that runtime directory.
+At the same time, v2 docs and examples use `BotBlockerAddons::fileUrl()` for icons, JavaScript, CSS, and images under that runtime directory. This helper builds a URL rooted at `BotBlockerMultisite::getAddonsUrl()` with the correct slug prefix and safely-encoded relative path.
 
 Impact:
 
@@ -22,80 +22,35 @@ Required follow-up:
 Kit status:
 
 - The kit documents the risk.
-- The validator checks that asset paths exist and that code uses the correct helper.
+- The validator checks that asset paths exist and that code uses the correct helper (`BotBlockerAddons::fileUrl`).
 - HTTP status must be tested in WordPress because it depends on server configuration.
 
-## Marketplace builder is not manifest-first
+## Pre-run traffic decision provider (system reference — NOT a gap)
 
-The local `bbcs-addons` manager parses root PHP plugin headers and root `{slug}.svg/png` icons from first-party source folders. It does not use the v2 manifest as the authoritative metadata source.
+The v2 pre-run traffic decision provider system is fully implemented and production-ready as of BotBlocker Security 1.6.20. Add-ons that declare `traffic_decision_provider` in their features list and satisfy the `runtime.pre_run` contract are loaded by the plugin bootstrap (`botblocker-security.php`), and again in the AJAX check handler, via `BotBlockerAddons::includePreRunAddons()` before the main `BotBlocker::initialize()` cycle begins.
 
-Impact:
+Once loaded, registered providers participate at six decision stages inside `BotBlocker::run()`:
 
-- Marketplace metadata can diverge from `bbcs-addon.json`.
-- v2 packages with icons under `assets/icon.svg` may not publish icons through the current builder.
-- First-party source conventions can leak into third-party docs.
+- `before_prefly_checks` (before any core preflight checks)
+- `after_visitor_data` (after visitor data is collected)
+- `pre_core_rules` (before IP/ASN/rule database/rugov/path rules)
+- `post_core_rules` (after all core rules have checked)
+- `before_final_allow` (final gate before unconditional allow)
+- `after_request_data` (in visitor-trait, after request data is collected)
 
-Required follow-up:
+All six decision actions are supported: `allow`, `bypass`, `block`, `captcha`, `redirect`, and `log_only`.
 
-- Update the marketplace builder to prefer `bbcs-addon.json`.
-- Use manifest `assets.icon`, `version`, `requires_core`, `description`, and package `slug`.
-- Keep root PHP headers only as a fallback.
+Design distinction:
 
-Kit status:
-
-- The kit documents marketplace publishing as separate from third-party ZIP upload.
-
-## First-party settings patterns are mixed
-
-Some first-party add-ons save settings through BotBlocker core hardcoded option groups and plain field names. New third-party v2 add-ons should not copy that pattern.
-
-Impact:
-
-- An AI or developer copying first-party settings fields may create a settings UI that renders but never saves through the generic v2 settings flow.
-
-Required follow-up:
-
-- Keep docs explicit that third-party settings must use `settings.option[field]`.
-- Optionally migrate first-party settings views to the v2 option-array shape where compatible.
-
-Kit status:
-
-- The kit sample uses the correct v2 option-array pattern.
-
-## First-party source folder is not runtime
-
-The bundled add-ons live under `plugin/wp-content/plugins/botblocker-security/addons`, but BotBlocker runtime scanning uses `bbcs_addons_dir()` in protected uploads.
-
-Impact:
-
-- Editing/copying into the plugin source add-ons folder does not prove third-party runtime behavior.
-- Tests must install a ZIP into runtime.
-
-Required follow-up:
-
-- Keep source/runtime distinction visible in README and runtime docs.
-
-Kit status:
-
-- Documented in `docs/botblocker-runtime-contract.md`.
-
-## Generic v2 add-ons are not in-cycle traffic providers
-
-BotBlocker loads normal active v2 add-on core files after `$botBlocker->initialize()` has already run the main request-check cycle. Only add-ons that explicitly opt into `runtime.pre_run` with `traffic_decision_provider` are loaded before the cycle.
-
-Impact:
-
-- A normal v2 add-on can read the final `BotBlocker::getInstance()` state from later WordPress hooks.
-- A normal v2 add-on can redirect or tag requests that BotBlocker already allowed.
-- In full secure mode, blocked/challenged requests may stop before normal v2 add-ons are included.
-- A normal v2 add-on cannot reliably make allow/block/captcha/redirect/bypass decisions before BotBlocker core challenges or blocks a request.
-- Traffic-management add-ons that need to participate inside the core decision pipeline must use the `runtime.pre_run` manifest contract.
-- Pre-run traffic providers are critical-risk add-ons. They should be disabled by default, support dry-run, and be tested on staging before production traffic is affected.
+- Normal v2 add-ons (without `runtime.pre_run`) are loaded after `BotBlocker::initialize()` completes. They can read final state and react from later WordPress hooks, but cannot make in-cycle traffic decisions.
+- Pre-run traffic providers (with `runtime.pre_run.contract = traffic_decision_provider`) are included before the request-check cycle and their decisions are routed through `BotBlockerAddonDecisionTrait::apply_addon_traffic_decisions()` at each declared stage.
+- This distinction is by design, not a missing feature. Traffic decision add-ons MUST use the pre-run contract.
 
 Required follow-up:
 
 - Keep the distinction between normal late-loaded add-ons and pre-run traffic providers explicit.
 - Keep provider decisions routed through BotBlocker core validation instead of letting add-ons mutate BotBlocker properties directly.
+- Pre-run traffic providers are critical-risk add-ons. They should be disabled by default, support dry-run, and be tested on staging before production traffic is affected.
 
 Kit status:
 
@@ -103,3 +58,6 @@ Kit status:
 - Pre-run traffic provider hooks are documented in `docs/core-hook-integration.md`.
 - The reference pre-run traffic provider package is `examples/acme-traffic-guard`.
 - Available object fields are documented in `docs/botblocker-core-object.md`, `docs/botblocker-request-data.md`, and `docs/botblocker-settings-reference.md`.
+- The pre-run manifest contract is: `pre_run.enabled = true`, `pre_run.file` points to the bootstrap, `pre_run.contract = 'traffic_decision_provider'`, `pre_run.register` is the callable that invokes `BotBlockerAddons::registerTrafficDecisionProvider()`.
+- Validated provider callback signature: `function(BotBlocker $bbcs, string $stage, array $provider): ?array`.
+- Validated decision return: `['action' => 'allow|bypass|block|captcha|redirect|log_only', 'reason' => '...', 'code' => 901, 'url' => '...', 'status' => 302]`.

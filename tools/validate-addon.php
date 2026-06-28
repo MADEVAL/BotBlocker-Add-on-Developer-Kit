@@ -273,7 +273,7 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         return;
     }
 
-    foreach (array('schema', 'slug', 'name', 'version', 'requires_core', 'core') as $field) {
+    foreach (array('slug', 'name', 'version', 'requires_core', 'core') as $field) {
         if (!isset($manifest[$field]) || trim((string) $manifest[$field]) === '') {
             bbcs_validator_error($errors, 'Missing required manifest field: ' . $field);
         }
@@ -287,7 +287,10 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         bbcs_validator_error($errors, 'Manifest slug must match root folder name.');
     }
 
-    if (($manifest['schema'] ?? '') !== '2.0') {
+    $schema_value = isset($manifest['schema']) ? trim((string) $manifest['schema']) : '';
+    if ($schema_value === '') {
+        bbcs_validator_warning($warnings, 'Manifest does not declare "schema". BotBlocker defaults it to "2.0", but a well-formed v2 manifest should declare "schema": "2.0".');
+    } elseif ($schema_value !== '2.0') {
         bbcs_validator_warning($warnings, 'Manifest schema is not "2.0".');
     }
 
@@ -318,8 +321,10 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         }
         $absolute = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $safe);
         if (!file_exists($absolute)) {
-            $level = in_array($field, array('core', 'settings.view'), true) ? 'error' : 'warning';
-            if ($level === 'error') {
+            // Core marks a package invalid only when the `core` file is missing.
+            // A declared-but-missing settings.view, main, or asset leaves the package
+            // valid and loadable (no settings tab / no icon), so those are warnings.
+            if ($field === 'core') {
                 bbcs_validator_error($errors, 'Manifest path does not exist for ' . $field . ': ' . $safe);
             } else {
                 bbcs_validator_warning($warnings, 'Manifest path does not exist for ' . $field . ': ' . $safe);
@@ -357,8 +362,12 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         bbcs_validator_warning($warnings, 'settings.option is declared without settings.sanitize.');
     }
 
-    if ($settings_sanitize !== '' && !isset($functions[$settings_sanitize])) {
-        bbcs_validator_error($errors, 'settings.sanitize callback not found in PHP files: ' . $settings_sanitize);
+    if ($settings_sanitize !== '' && strpos($settings_sanitize, '::') === false && !isset($functions[$settings_sanitize])) {
+        // Core falls back to BotBlockerAddons::sanitizeSettingsValue() when the declared
+        // sanitizer is not callable, so a missing function-style sanitizer degrades but does
+        // not invalidate the package. Class::method callbacks cannot be verified by static
+        // scanning and are accepted as long as the files parse.
+        bbcs_validator_warning($warnings, 'settings.sanitize callback not found in PHP files (BotBlocker will fall back to its built-in sanitizer): ' . $settings_sanitize);
     }
 
     $lifecycle = is_array($manifest['lifecycle'] ?? null) ? $manifest['lifecycle'] : array();
@@ -369,7 +378,9 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         if (!is_string($callback) || trim($callback) === '') {
             continue;
         }
-        if (!isset($functions[$callback])) {
+        // Class::method callbacks are accepted by core via is_callable() and cannot be
+        // verified by static scanning, so only function-style callbacks are checked here.
+        if (strpos($callback, '::') === false && !isset($functions[$callback])) {
             bbcs_validator_error($errors, 'Lifecycle callback not found in PHP files: ' . $callback);
         }
     }
@@ -459,7 +470,7 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
             }
 
             if (preg_match('/\bbotblocker_tools_(core|login|headers|malware|https_protocol)_settings\b/', $contents) && strpos($slug, 'bbcs-') !== 0) {
-                bbcs_validator_warning($warnings, 'Third-party add-ons should not use first-party shared BotBlocker settings options: ' . $relative);
+                bbcs_validator_warning($warnings, 'Third-party add-ons should not use BotBlocker built-in shared settings options: ' . $relative);
             }
         }
     }
@@ -503,8 +514,8 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         $core_rel = bbcs_validator_safe_relative_path((string) ($manifest['core'] ?? ''));
         $core_path = $core_rel !== '' ? $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $core_rel) : '';
         $core_contents = is_file($core_path) ? file_get_contents($core_path) : '';
-        if (is_string($core_contents) && $core_contents !== '' && strpos($core_contents, 'bbcs_addon_file_url') === false) {
-            bbcs_validator_warning($warnings, 'Package declares assets; core should use bbcs_addon_file_url() for runtime URLs when assets are enqueued or rendered.');
+        if (is_string($core_contents) && $core_contents !== '' && strpos($core_contents, 'BotBlockerAddons::fileUrl') === false) {
+            bbcs_validator_warning($warnings, 'Package declares assets; core should use BotBlockerAddons::fileUrl() for runtime URLs when assets are enqueued or rendered.');
         }
     }
 }

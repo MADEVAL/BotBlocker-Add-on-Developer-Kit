@@ -51,7 +51,7 @@ Do not use plain field names for third-party v2 packages:
 <input type="checkbox" name="enabled" value="1">
 ```
 
-Some first-party add-ons use plain field names because BotBlocker core has internal save logic for them. That pattern is not the public third-party v2 settings contract.
+BotBlocker's own built-in settings use plain field names because core has internal save logic for them. That pattern is not the public third-party v2 settings contract.
 
 ## Defaults
 
