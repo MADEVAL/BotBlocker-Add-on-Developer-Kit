@@ -1,10 +1,32 @@
 # BotBlocker Add-on Developer Kit
 
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[![WordPress](https://img.shields.io/badge/WordPress-%3E%3D5.0-blue.svg)](https://wordpress.org/plugins/botblocker-security/)
+[![PHP](https://img.shields.io/badge/PHP-%3E%3D7.4-777BB4.svg)](https://www.php.net/)
+
 ![BotBlocker Security banner](https://ps.w.org/botblocker-security/assets/banner-1544x500.png?rev=3405280)
 
 This repository is the working manual, template, validator, and AI instruction pack for building third-party add-ons for BotBlocker Security.
 
 BotBlocker Security is a WordPress anti-bot firewall and proactive protection plugin. It protects login flows, XML-RPC, REST, comments, file requests, payment callbacks, and high-risk traffic with request checks, rules, CAPTCHA, logs, early-init protection, and add-on based extensions.
+
+## Table of Contents
+
+- [Baseline](#baseline)
+- [What Is Inside](#what-is-inside)
+- [Critical Runtime Model](#critical-runtime-model)
+- [Critical Traffic-Control Warning](#critical-traffic-control-warning)
+- [Fast Path For A New Add-on](#fast-path-for-a-new-add-on)
+- [Validate](#validate)
+- [Package](#package)
+- [Minimal Manifest](#minimal-manifest)
+- [Settings Contract](#settings-contract)
+- [Settings UI Pattern](#settings-ui-pattern)
+- [Assets](#assets)
+- [Code Quality Gate](#code-quality-gate)
+- [Reference Add-ons](#reference-add-ons)
+- [Official Links](#official-links)
+- [Definition Of Done](#definition-of-done)
 
 ## Baseline
 
