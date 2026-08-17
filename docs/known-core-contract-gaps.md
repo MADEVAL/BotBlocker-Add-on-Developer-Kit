@@ -1,6 +1,6 @@
 # Known Core Contract Gaps
 
-These are known mismatches between the public add-on kit and the BotBlocker Security codebase (`1.6.20` or later, the minimum version required for the Add-on API v2 system).
+These are known mismatches between the public add-on kit and the BotBlocker Security codebase (`1.7.5` or later, the minimum version required for the Add-on API v2 system).
 
 ## Runtime static assets may be blocked
 
@@ -25,18 +25,19 @@ Kit status:
 - The validator checks that asset paths exist and that code uses the correct helper (`BotBlockerAddons::fileUrl`).
 - HTTP status must be tested in WordPress because it depends on server configuration.
 
-## Pre-run traffic decision provider (system reference — NOT a gap)
+## Pre-run traffic decision provider (system reference - NOT a gap)
 
-The v2 pre-run traffic decision provider system is fully implemented and production-ready as of BotBlocker Security 1.6.20. Add-ons that declare `traffic_decision_provider` in their features list and satisfy the `runtime.pre_run` contract are loaded by the plugin bootstrap (`botblocker-security.php`), and again in the AJAX check handler, via `BotBlockerAddons::includePreRunAddons()` before the main `BotBlocker::initialize()` cycle begins.
+The v2 pre-run traffic decision provider system is fully implemented and production-ready as of BotBlocker Security 1.7.5. Add-ons that declare `traffic_decision_provider` in their features list and satisfy the `runtime.pre_run` contract are loaded by the plugin bootstrap (`botblocker-security.php`), and again in the AJAX check handler, via `BotBlockerAddons::includePreRunAddons()` before the main `BotBlocker::initialize()` cycle begins.
 
-Once loaded, registered providers participate at six decision stages inside `BotBlocker::run()`:
+Once loaded, registered providers participate at seven decision stages inside `BotBlocker::run()` (six in `class-botblocker.php`, plus `after_request_data` in `class-botblocker-visitor-trait.php`):
 
 - `before_prefly_checks` (before any core preflight checks)
+- `after_request_data` (in visitor-trait, after request data is collected)
 - `after_visitor_data` (after visitor data is collected)
 - `pre_core_rules` (before IP/ASN/rule database/rugov/path rules)
 - `post_core_rules` (after all core rules have checked)
+- `post_rate_limit` (after core rate limiting, before cookie and heuristic checks)
 - `before_final_allow` (final gate before unconditional allow)
-- `after_request_data` (in visitor-trait, after request data is collected)
 
 All six decision actions are supported: `allow`, `bypass`, `block`, `captcha`, `redirect`, and `log_only`.
 
@@ -61,3 +62,40 @@ Kit status:
 - The pre-run manifest contract is: `pre_run.enabled = true`, `pre_run.file` points to the bootstrap, `pre_run.contract = 'traffic_decision_provider'`, `pre_run.register` is the callable that invokes `BotBlockerAddons::registerTrafficDecisionProvider()`.
 - Validated provider callback signature: `function(BotBlocker $bbcs, string $stage, array $provider): ?array`.
 - Validated decision return: `['action' => 'allow|bypass|block|captcha|redirect|log_only', 'reason' => '...', 'code' => 901, 'url' => '...', 'status' => 302]`.
+
+### Weekly-report add-ons run outside the request cycle (not a gap)
+
+Notification add-ons (`bbcs-pusher`, `bbcs-telegram`) are weekly-report senders: they run on their own cron schedule and read statistics from `bbcs_counters`. They have no in-cycle code and no pre-run contract — the traffic pipeline never executes them.
+
+- The public `bbcs_botblocker_blocked_request` action fires for in-cycle observers (decision-trait `block` decisions and the core response pipeline); the rate-limit path emits `bbcs_rate_limit_blocked` only. Third parties may observe with plain `add_action` — no registration contract needed.
+- Dark challenges (captcha decisions and `redirect_to_dark`) intentionally emit no block alert.
+
+### Runtime addon palette entries require matching promo registration
+
+Installed addons get automatic ⌘K palette entries from their `ui.palette` manifest data via `BotBlockerPalette::getAddonPaletteActions()`. For addons NOT yet installed (marketing/promo visibility), entries must be registered in `BotBlockerPalette::getAddonPromoActions()` in `includes/data/class-botblocker-palette.php`.
+
+Third-party addons can register promo entries via the `bbcs_palette_addon_promo_actions` filter:
+```php
+add_filter('bbcs_palette_addon_promo_actions', function(array $promos) {
+    $promos[] = ['ic' => 'star', 't' => 'My Addon', 'go' => 'addons', 'addon' => 'my-addon', 'pro' => true];
+    return $promos;
+});
+```
+
+Active installed addons get `'tab' => $slug` entries (link to settings). Inactive-but-installed addons get `'addon' => $slug` entries (install prompt). Uninstalled addons with promo entries get `'addon' => $slug` entries (marketplace prompt).
+
+**This is a known design tension**: manifest-driven discovery works only for installed addons. The promo list is the sole remaining centralized addon reference in core — a curated marketing catalog that bridges the gap between "not installed" and "discoverable".
+
+**Recommendation for third-party addons**: register your promo entry via the filter in a file that loads early (e.g., a standalone plugin bootstrap or a must-use plugin). This ensures palette visibility before the addon itself is installed.
+
+## Manifest fields parsed but not consumed by core
+
+The following manifest fields are accepted by `BotBlockerAddons` normalization but are currently NOT consumed by any core runtime path:
+
+| Field | Parsed by | Runtime reality |
+| --- | --- | --- |
+| `gateway.*.mutual_exclusion` | manifest only (declared by `bbcs-early-init`) | `BotBlockerAddons::normalizeGateway()` does not pass it into the gateway registry, so `BotBlockerGateway::enableGateway()` never sees it for v2 packages. Gateway mutual exclusion is supported by the API but not fed by manifests. |
+| `ui.settings_sections` | `normalizeUi()` | Stored in the addon array but no core screen reads it; core settings sections are not extendable through this field. |
+| `storage.cleanup_on_uninstall` | `normalizeStorage()` | The uninstaller reads only `storage.cache_dirs`; the flag is ignored. |
+
+Do not rely on these fields in third-party packages until core starts consuming them.

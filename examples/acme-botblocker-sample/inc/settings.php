@@ -13,7 +13,7 @@ $icon_url = function_exists( 'acme_bbcs_sample_asset_url' ) ? acme_bbcs_sample_a
                 <?php // phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage ?>
                 <img src="<?php echo esc_url( $icon_url ); ?>" alt="" class="img-fluid bbcs-info-image mb-3">
             <?php else : ?>
-                <i class="fa-solid fa-puzzle-piece fa-3x bbcs_color_blue mb-3" aria-hidden="true"></i>
+                <i class="fa-solid fa-puzzle-piece fa-3x bbcs_color_green mb-3" aria-hidden="true"></i>
             <?php endif; ?>
             <p class="bbcs-info-text"><?php esc_html_e( 'Demonstrates the recommended BotBlocker Add-on API v2 structure with manifest metadata, runtime hooks, settings storage, lifecycle callbacks, icon, and optional scripts.', 'acme-botblocker-sample' ); ?></p>
             <p class="bbcs-info-text"><?php esc_html_e( 'Use this layout for add-ons that need a clear settings introduction. Put the icon first, then concise help text, then useful links.', 'acme-botblocker-sample' ); ?></p>

@@ -52,17 +52,17 @@ Expected:
 
 ## WordPress manual test
 
-1. Install/activate BotBlocker Security `1.6.20+`.
+1. Install/activate BotBlocker Security `1.7.5+`.
 2. Open `BotBlocker -> Add-ons`.
 3. Click `Upload ZIP`.
 4. Upload the add-on ZIP.
 5. Confirm it appears in the Installed tab.
 6. Confirm card metadata: name, version, description, icon, compatibility.
 7. Activate the add-on.
-8. Open `BotBlocker -> Tools`.
-9. Confirm the add-on tab appears.
+8. Open `BotBlocker -> Add-ons`.
+9. Confirm the add-on settings tab appears.
 10. Save settings.
-11. Reload Tools and confirm settings persist.
+11. Reload Add-ons and confirm settings persist.
 12. Confirm frontend/admin runtime behavior works.
 13. Deactivate the add-on.
 14. Confirm runtime behavior stops.

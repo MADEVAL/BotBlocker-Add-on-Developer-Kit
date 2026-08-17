@@ -3,6 +3,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+require_once __DIR__ . '/class-acme-botblocker-sample-tools-page.php';
+Acme_BotBlocker_Sample_Tools_Page::init();
+
 function acme_bbcs_sample_defaults(): array {
     return array(
         'enabled'      => 1,

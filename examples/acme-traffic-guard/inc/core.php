@@ -3,6 +3,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+require_once __DIR__ . '/class-acme-traffic-guard-tools-page.php';
+Acme_Traffic_Guard_Tools_Page::init();
+
 require_once __DIR__ . '/shared.php';
 
 function acme_bbcs_traffic_guard_asset_url( string $relative ): string {

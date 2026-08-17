@@ -136,6 +136,9 @@ function bbcs_validator_collect_files(string $dir, string $suffix = ''): array {
 function bbcs_validator_find_functions(array $php_files): array {
     $functions = array();
     foreach ($php_files as $file) {
+        if (bbcs_validator_is_vendor($file)) {
+            continue;
+        }
         $contents = file_get_contents($file);
         if (!is_string($contents)) {
             continue;
@@ -147,6 +150,10 @@ function bbcs_validator_find_functions(array $php_files): array {
         }
     }
     return $functions;
+}
+
+function bbcs_validator_is_vendor(string $file_or_path): bool {
+    return preg_match('#(^|/)vendor/#', str_replace('\\', '/', $file_or_path)) === 1;
 }
 
 function bbcs_validator_lint_php(string $file): array {
@@ -334,6 +341,9 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
 
     $php_files = bbcs_validator_collect_files($root, '.php');
     foreach ($php_files as $php_file) {
+        if (bbcs_validator_is_vendor($php_file)) {
+            continue;
+        }
         list($lint_code, $lint_output) = bbcs_validator_lint_php($php_file);
         if ($lint_code !== 0) {
             bbcs_validator_error($errors, 'PHP lint failed for ' . $php_file . ': ' . $lint_output);
@@ -398,14 +408,14 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
     $runtime = is_array($manifest['runtime'] ?? null) ? $manifest['runtime'] : array();
     $pre_run = is_array($runtime['pre_run'] ?? null) ? $runtime['pre_run'] : array();
     $has_traffic_provider = in_array('traffic_decision_provider', $features, true);
-    $has_pre_run = !empty($pre_run);
+    $has_pre_run          = !empty($pre_run);
 
     if ($has_traffic_provider) {
         bbcs_validator_warning($warnings, 'This package declares traffic_decision_provider. Treat it as critical-risk traffic-control code: disabled by default, dry-run first, staging test, and rollback required.');
+    }
 
-        if (!$has_pre_run) {
-            bbcs_validator_error($errors, 'traffic_decision_provider requires runtime.pre_run manifest contract.');
-        }
+    if ($has_traffic_provider && !$has_pre_run) {
+        bbcs_validator_error($errors, 'traffic_decision_provider requires runtime.pre_run manifest contract.');
     }
 
     if ($has_pre_run && !$has_traffic_provider) {
@@ -455,9 +465,28 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
     }
 
     $all_files = bbcs_validator_collect_files($root);
+    $builtin_options = array(
+        'bbcs_core_settings',
+        'bbcs_behavior_settings',
+        'bbcs_cookie_alert_settings',
+        'bbcs_cron_settings',
+        'bbcs_headers_settings',
+        'bbcs_https_protocol_settings',
+        'bbcs_login_settings',
+        'bbcs_malware_settings',
+        'bbcs_pusher_settings',
+        'bbcs_speedup_settings',
+        'bbcs_telegram_settings',
+        'bbcs_truth_source_settings',
+        'bbcs_xmlrpc_tunnel_settings',
+    );
     foreach ($all_files as $file) {
         $relative = substr($file, strlen($root) + 1);
         $relative = str_replace(DIRECTORY_SEPARATOR, '/', $relative);
+
+        if (bbcs_validator_is_vendor($file)) {
+            continue;
+        }
 
         if (preg_match('/\.(php|js|css|txt|md|json)$/', $file)) {
             $contents = file_get_contents($file);
@@ -469,8 +498,12 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
                 bbcs_validator_error($errors, 'Do not use plugin_dir_url() for uploaded add-on assets: ' . $relative);
             }
 
-            if (preg_match('/\bbotblocker_tools_(core|login|headers|malware|https_protocol)_settings\b/', $contents) && strpos($slug, 'bbcs-') !== 0) {
-                bbcs_validator_warning($warnings, 'Third-party add-ons should not use BotBlocker built-in shared settings options: ' . $relative);
+            if (strpos($slug, 'bbcs-') !== 0) {
+                foreach ($builtin_options as $builtin_option) {
+                    if (preg_match('/\b' . preg_quote($builtin_option, '/') . '\b/', $contents)) {
+                        bbcs_validator_warning($warnings, 'Third-party add-ons should not use BotBlocker built-in shared settings options: ' . $relative . ' (' . $builtin_option . ')');
+                    }
+                }
             }
         }
     }
@@ -516,6 +549,45 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         $core_contents = is_file($core_path) ? file_get_contents($core_path) : '';
         if (is_string($core_contents) && $core_contents !== '' && strpos($core_contents, 'BotBlockerAddons::fileUrl') === false) {
             bbcs_validator_warning($warnings, 'Package declares assets; core should use BotBlockerAddons::fileUrl() for runtime URLs when assets are enqueued or rendered.');
+        }
+    }
+
+    if (!empty($manifest['ui']['palette']) && is_array($manifest['ui']['palette'])) {
+        $palette = $manifest['ui']['palette'];
+        if (empty($palette['icon'])) {
+            bbcs_validator_error($errors, 'ui.palette.icon is required when ui.palette is declared.');
+        }
+        if (empty($palette['title'])) {
+            bbcs_validator_warning($warnings, 'ui.palette.title should be set for command palette visibility.');
+        }
+        if (isset($palette['priority']) && !is_int($palette['priority'])) {
+            bbcs_validator_warning($warnings, 'ui.palette.priority should be an integer.');
+        }
+    }
+
+    if (!empty($manifest['storage']) && is_array($manifest['storage'])) {
+        $storage = $manifest['storage'];
+        if (!empty($storage['cache_dirs']) && is_array($storage['cache_dirs'])) {
+            foreach ($storage['cache_dirs'] as $dir) {
+                if (!is_string($dir) || $dir === '') {
+                    bbcs_validator_error($errors, 'storage.cache_dirs must contain non-empty strings.');
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!empty($manifest['gateway']) && is_array($manifest['gateway'])) {
+        if (!empty($manifest['gateway']['early_init']) && is_array($manifest['gateway']['early_init'])) {
+            $ei = $manifest['gateway']['early_init'];
+            if (!empty($ei['mutual_exclusion']) && is_array($ei['mutual_exclusion'])) {
+                foreach ($ei['mutual_exclusion'] as $excluded) {
+                    if (!is_string($excluded) || $excluded === '') {
+                        bbcs_validator_error($errors, 'gateway.early_init.mutual_exclusion must contain non-empty strings.');
+                        break;
+                    }
+                }
+            }
         }
     }
 }

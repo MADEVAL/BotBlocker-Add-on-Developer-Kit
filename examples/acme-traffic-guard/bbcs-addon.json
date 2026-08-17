@@ -3,7 +3,7 @@
   "slug": "acme-traffic-guard",
   "name": "ACME Traffic Guard",
   "version": "1.0.0",
-  "requires_core": "1.6.20",
+  "requires_core": "1.7.5",
   "requires_php": "7.4",
   "author": "ACME Security",
   "description": "Dangerous-by-design sample traffic decision provider with dry-run defaults, safe redirect guards, and explicit pre-run opt-in.",

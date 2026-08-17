@@ -20,11 +20,11 @@ Read this document together with:
 BotBlocker separates your source package from the runtime package.
 
 - Source package: your repository or build output. You edit here.
-- Runtime package: `wp-content/uploads/botblocker/addons/{slug}` — the protected uploads directory BotBlocker scans and loads add-ons from. Your ZIP is validated and copied here on upload.
+- Runtime package: `wp-content/uploads/botblocker/addons/{slug}` - the protected uploads directory BotBlocker scans and loads add-ons from. Your ZIP is validated and copied here on upload.
 - Active add-ons option: `bbcs_active_addons`.
 - Scanner entry point: `BotBlockerAddons::scanAll()`.
 
-An uploaded package is installed inactive. The administrator reviews and activates it from the Installed tab. BotBlocker never loads an add-on from your source repository — only from the uploads runtime directory after upload.
+An uploaded package is installed inactive. The administrator reviews and activates it from the Installed tab. BotBlocker never loads an add-on from your source repository - only from the uploads runtime directory after upload.
 
 ## Minimal package
 
@@ -59,7 +59,7 @@ File name: `bbcs-addon.json`.
   "slug": "vendor-addon",
   "name": "Vendor Add-on",
   "version": "1.0.0",
-  "requires_core": "1.6.20",
+  "requires_core": "1.7.5",
   "requires_php": "7.4",
   "author": "Vendor Name",
   "description": "Adds a focused BotBlocker extension.",
@@ -79,6 +79,32 @@ File name: `bbcs-addon.json`.
   "features": [
     "vendor_feature"
   ],
+  // "gateway": {
+  //   "early_init": {
+  //     "router_file": "inc/router.php",
+  //     "entry_file": "inc/entry.php",
+  //     "entry_class": "Namespace\\ClassName",
+  //     "deploy_target": "data",
+  //     "wp_config_block": true,
+  //     "consistency_check": "namespace_func_name",
+  //     "data_file_probe": "key-file.php"
+  //   },
+  //   "mu_plugin": {
+  //     "source_file": "mu/plugin.php",
+  //     "target_filename": "output-filename.php",
+  //     "auto_deploy": true
+  //   }
+  // },
+  // "ui": {
+  //   "palette": {
+  //     "icon": "speed",
+  //     "title": "Speed up - performance",
+  //     "priority": 10
+  //   }
+  // },
+  // "storage": {
+  //   "cache_dirs": ["my-cache-dir"]
+  // },
   "assets": {
     "icon": "assets/icon.svg",
     "readme": "readme.txt"
@@ -115,6 +141,9 @@ Always declare these fields in a well-formed v2 manifest. Internally, BotBlocker
 - `lifecycle.load`: callback for active add-on load events.
 - `lifecycle.health_check`: callback for diagnostic flows.
 - `runtime.pre_run`: optional strict pre-run contract for in-cycle traffic decision providers.
+- `gateway`: optional gateway configurations for Layer 1 early-init / Layer 2 MU-plugin deployment.
+- `ui`: optional UI integration metadata for the admin panel and ⌘K command palette.
+- `storage`: optional storage cleanup metadata for uninstall flows.
 - `features`: provider capability names exposed by the active add-on.
 - `assets.icon`: relative icon path shown in the Add-ons UI.
 - `assets.readme`: package readme path.
@@ -138,7 +167,7 @@ The `main` file is a human-readable root file and optional bootstrap. Keep its h
  * Description: Adds a focused BotBlocker extension.
  * Version: 1.0.0
  * Author: Vendor Name
- * Requires-Core: 1.6.20
+ * Requires-Core: 1.7.5
  * Requires PHP: 7.4
  * Text Domain: vendor-addon
  * License: GPLv2 or later
@@ -222,6 +251,10 @@ Pre-run rules:
 - If the declared marker is missing after the pre-run file is included, BotBlocker refuses to register the provider.
 - The pre-run file must only register callbacks. Do not echo, scan files, call remote APIs, update settings, render UI, or run expensive work.
 
+## Weekly-report add-ons (no pre-run contract)
+
+Notification add-ons such as the built-in `bbcs-pusher` and `bbcs-telegram` deliver a weekly statistics report on their own cron schedule and read the numbers from the BotBlocker database (`bbcs_counters`). They deliberately have NO in-cycle contract: they never run on visitor requests, never touch the traffic pipeline, and need no pre-run registration. The public block events (`bbcs_botblocker_blocked_request`, `bbcs_rate_limit_blocked`) remain available for third-party in-cycle observers via plain `add_action`.
+
 Pre-run file example:
 
 ```php
@@ -255,6 +288,88 @@ function vendor_traffic_decide( BotBlocker $bbcs, string $stage, array $provider
 }
 ```
 
+## Gateway
+
+The `gateway` field maps gateway types to configurations. Use it when the add-on needs special integration at Layer 1 (early-init) or Layer 2 (MU-plugin). Add-ons that run only at Layer 3 (main shield) do not need a `gateway` block.
+
+```json
+"gateway": {
+    "early_init": {
+        "router_file": "inc/router.php",
+        "entry_file": "inc/entry.php",
+        "entry_class": "Namespace\\ClassName",
+        "deploy_target": "data",
+        "wp_config_block": true,
+        "consistency_check": "namespace_func_name",
+        "data_file_probe": "key-file.php"
+    },
+    "mu_plugin": {
+        "source_file": "mu/plugin.php",
+        "target_filename": "output-filename.php",
+        "auto_deploy": true
+    }
+}
+```
+
+| Sub-field | Type | Purpose |
+|-----------|------|---------|
+| `gateway.early_init.router_file` | string | Relative path to the early router PHP file deployed to data dir |
+| `gateway.early_init.entry_file` | string | Relative path to the main early-init PHP file |
+| `gateway.early_init.entry_class` | string | Fully qualified class name for early-init bootstrap |
+| `gateway.early_init.deploy_target` | string | Target directory for deployment: `"data"` |
+| `gateway.early_init.wp_config_block` | bool | Whether to inject the `/* BBCS Start */` block into wp-config.php |
+| `gateway.early_init.consistency_check` | string | Callable name for consistency verification on each request |
+| `gateway.early_init.data_file_probe` | string | Key filename checked post-install to verify deployment |
+| `gateway.mu_plugin.source_file` | string | Relative path to the MU-plugin PHP file in the package |
+| `gateway.mu_plugin.target_filename` | string | Output filename when deployed to `WPMU_PLUGIN_DIR` |
+| `gateway.mu_plugin.auto_deploy` | bool | Whether to auto-deploy on activation |
+
+These fields are OPTIONAL and only needed when the add-on operates at Layer 1 (early-init, before WordPress core) or Layer 2 (MU-plugin, muplugins_loaded). Both layers require disciplined isolation — early-init has no WordPress API, MU-plugin has no main plugin classes.
+
+> Note: `gateway.*.mutual_exclusion` is declared by built-in manifests (for example `bbcs-early-init`) but the current manifest normalizer does not pass it into the gateway registry, so it is not enforced at runtime for v2 packages. Do not rely on it. See `known-core-contract-gaps.md`.
+
+## UI
+
+The `ui` field provides UI integration metadata for the admin panel and ⌘K command palette.
+
+```json
+"ui": {
+    "palette": {
+        "icon": "speed",
+        "title": "Speed up - performance",
+        "priority": 10
+    }
+}
+```
+
+| Sub-field | Type | Default | Purpose |
+|-----------|------|---------|---------|
+| `ui.palette.icon` | string | `"puzzle"` | SVG icon name for ⌘K command palette |
+| `ui.palette.title` | string | addon `name` | Display title in palette (install prompt or settings link) |
+| `ui.palette.priority` | int | 50 | Declared sort hint; the palette currently sorts entries by title, not by this value |
+
+The palette data is read by `BotBlockerAddons::normalizeUi()` and surfaced to the admin ⌘K command palette.
+
+This field is OPTIONAL — declare it only when the add-on needs palette visibility. Note: `ui.settings_sections` (declared in some built-in manifests) is parsed but not consumed by any core screen — do not rely on it. See `known-core-contract-gaps.md`.
+
+## Storage
+
+The `storage` field declares storage cleanup metadata for uninstall flows.
+
+```json
+"storage": {
+    "cache_dirs": ["my-cache-dir"]
+}
+```
+
+| Sub-field | Type | Default | Purpose |
+|-----------|------|---------|---------|
+| `storage.cache_dirs` | string[] | `[]` | Relative directory names under uploads to remove on uninstall |
+
+The cache dirs are collected by `BotBlockerAddons::normalizeStorage()` and used by the BotBlocker uninstaller. `storage.cleanup_on_uninstall` is accepted by the normalizer but currently not consumed by the uninstaller — do not rely on it. See `known-core-contract-gaps.md`.
+
+This field is OPTIONAL — only needed when the add-on creates cache directories or requires special cleanup on uninstall.
+
 ## Settings
 
 The settings view is rendered inside BotBlocker admin. It should only render fields and read current values. Sanitization belongs in the callback declared in the manifest.
@@ -281,15 +396,16 @@ The fallback never enforces an allowlist of keys, never type-casts to your inten
 
 ### Settings save flow
 
-BotBlocker saves settings for active add-ons from the `BotBlocker -> Tools` form.
+BotBlocker saves settings for active add-ons from the Add-ons page settings form.
 
 1. The active add-on declares `settings.option`.
 2. The settings view renders fields under that option key.
-3. The admin submits the Tools form.
+3. The admin submits the settings form on the Add-ons page.
 4. BotBlocker reads the posted option array.
 5. BotBlocker includes the add-on core file if needed.
 6. BotBlocker calls `settings.sanitize` when callable.
 7. BotBlocker stores the sanitized array with `update_option()`.
+8. BotBlocker fires `bbcs_addon_settings_saved` with the posted array.
 
 Field names must be option-array names:
 
@@ -313,7 +429,7 @@ function vendor_addon_activate( array $addon, array $context, string $event, str
 
 ### Settings help block
 
-`settings.view` is included inside the add-on tab on `BotBlocker -> Tools`. Place add-on help inside that view, before controls. Use the native BotBlocker info-card pattern so the page looks consistent with BotBlocker's own settings pages.
+`settings.view` is included inside the add-on settings tab on `BotBlocker -> Add-ons`. Place add-on help inside that view, before controls. Use the native BotBlocker info-card pattern so the page looks consistent with BotBlocker's own settings pages.
 
 Recommended order:
 

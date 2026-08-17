@@ -254,7 +254,7 @@ These helpers are available after BotBlocker core helpers are loaded:
 | `BotBlockerMultisite::getAddonsUrl()` | Runtime add-ons base URL. |
 | `BotBlockerIp::netMatch( $network, $ip )` | Check IP/CIDR style match. |
 | `BotBlockerIp::getPtr( $ip, $time, $ttl )` | PTR lookup with cache behavior. |
-| `bbcs_codeList( $code )` | Get BotBlocker log code metadata. |
+| `BotBlockerDataCodes::codeList( $code )` | Get BotBlocker log code metadata. |
 
 Avoid writing to BotBlocker core data files or tables unless the add-on is explicitly designed and tested as a core-management extension.
 

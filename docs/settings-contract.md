@@ -1,19 +1,20 @@
 # Settings Contract
 
-BotBlocker Add-on API v2 settings are saved through the BotBlocker Tools page for active add-ons.
+BotBlocker Add-on API v2 settings are saved through the BotBlocker Add-ons page settings form for active add-ons.
 
 ## Save flow
 
 1. Add-on is installed.
 2. Administrator activates it from `BotBlocker -> Add-ons`.
 3. Add-on declares `settings.view` and `settings.option`.
-4. BotBlocker renders the settings view inside `BotBlocker -> Tools`.
+4. BotBlocker renders the settings view inside the add-on settings tab on `BotBlocker -> Add-ons`.
 5. The settings view renders fields under the declared option array.
-6. Administrator clicks the Tools save button.
+6. Administrator clicks the save button on the Add-ons page.
 7. BotBlocker reads `$_POST[settings.option]`.
 8. BotBlocker includes the add-on core file when needed.
 9. BotBlocker calls `settings.sanitize` when callable.
 10. BotBlocker stores the sanitized array with `update_option()`.
+11. BotBlocker fires the `bbcs_addon_settings_saved` action with the posted array.
 
 Settings are saved only for active add-ons.
 

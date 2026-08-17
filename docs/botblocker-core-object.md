@@ -51,7 +51,7 @@ Do not expose the full hive to public visitors. It can contain operational detai
 
 ## Current v2 timing
 
-In BotBlocker Security `1.6.20` and later, `BotBlockerAddons::includeAll()` runs after `$botBlocker->initialize()` in the normal `plugins_loaded` boot flow.
+In BotBlocker Security `1.7.5` and later, `BotBlockerAddons::includeAll()` runs after `$botBlocker->initialize()` in the normal `plugins_loaded` boot flow.
 
 Practical meaning:
 
@@ -134,29 +134,31 @@ Current `BotBlocker::initialize()` flow:
 10. `process_disabled_state()`
 11. `run()`
 
-Current `BotBlocker::run()` flow:
+Current `BotBlocker::run()` flow (the decision stages where pre-run traffic providers are consulted are listed inline):
 
-1. `perform_prefly_checks()`
-2. `collect_visitor_data()`
-3. `update_settings_based_on_visitor_data()`
-4. `check_payment_bypass()`
-5. `is_safe_request()`
-6. `check_white_bot()`
-7. `check_ip_rules()`
-8. `check_rugov_rules()`
-9. `check_asn_rules()`
-10. `check_rules_database()`
-11. `check_path_rules()`
-12. `select_request_mode()`
-13. `process_headers()`
-14. `process_cookies()`
-15. `perform_simple_bot_checks()`
-16. `validate_referer()`
-17. `check_referer_get_params()`
-18. `check_hosting()`
-19. `check_language_mismatch()`
-20. optional force check
-21. `set_x_robot_headers()`
+1. `bbcs_botblocker_before_request_check` action
+2. addon decisions at stage `before_prefly_checks`
+3. `perform_prefly_checks()`
+4. `collect_basic_request_data()`
+5. `check_options_preflight()`
+6. `is_safe_request()`
+7. `collect_visitor_data()` — inside: `bbcs_botblocker_after_request_data` action, then addon decisions at stage `after_request_data`
+8. `update_settings_based_on_visitor_data()`
+9. `check_tls_fingerprint()`
+10. `bbcs_botblocker_after_visitor_data` action
+11. addon decisions at stage `after_visitor_data`
+12. `check_payment_bypass()`
+13. `select_request_mode()`
+14. `resolve_cookie_identity()`
+15. addon decisions at stage `pre_core_rules`
+16. `check_llm_bot()`, `check_white_bot()`, `check_ip_rules()`, `check_rugov_rules()`, `check_asn_rules()`, `check_rules_database()`, `check_path_rules()`
+17. addon decisions at stage `post_core_rules`
+18. `apply_core_rate_limit()`
+19. addon decisions at stage `post_rate_limit`
+20. payment bypass partial flow, `process_headers()`, `process_cookies()`
+21. `perform_simple_bot_checks()`, `validate_referer()`, `check_referer_get_params()`, `check_hosting()`, `check_language_mismatch()`, optional force check
+22. addon decisions at stage `before_final_allow`
+23. `bbcs_botblocker_allowed_request` action, `set_x_robot_headers()`
 
 The most useful read points are:
 

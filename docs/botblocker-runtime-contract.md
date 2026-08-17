@@ -1,6 +1,6 @@
 # BotBlocker Runtime Contract
 
-This document describes how BotBlocker Security (version `1.6.20` or later) loads add-ons at runtime. `1.6.20` is the minimum BotBlocker version required for the Add-on API v2 system. Treat this as the operational contract for third-party Add-on API v2 packages.
+This document describes how BotBlocker Security (version `1.7.5` or later) loads add-ons at runtime. `1.7.5` is the minimum BotBlocker version required for the Add-on API v2 system. Treat this as the operational contract for third-party Add-on API v2 packages.
 
 ## Two locations
 
@@ -15,11 +15,11 @@ runtime package
   Installed add-ons scanned and loaded by BotBlocker.
 ```
 
-The runtime package is authoritative for activation and execution. A third-party package is never loaded from your source repository or the developer kit — only from the uploads runtime directory after it is uploaded and installed.
+The runtime package is authoritative for activation and execution. A third-party package is never loaded from your source repository or the developer kit - only from the uploads runtime directory after it is uploaded and installed.
 
 ## Runtime directory
 
-BotBlocker creates a protected uploads area through `bbcs_create_protected_upload_dir()`:
+BotBlocker creates a protected uploads area through `BotBlockerUploads::createProtectedUploadDir()`:
 
 ```text
 wp-content/uploads/botblocker/
@@ -50,12 +50,14 @@ Runtime directory helpers:
 BotBlocker boots from `botblocker-security.php`.
 
 1. Core helpers and upload helpers are included.
-2. `bbcs_run_botblocker_shield()` runs on `plugins_loaded` with priority `-9998`.
+2. `BotBlockerBootstrap::runShield()` runs on `plugins_loaded` with priority `-9998`.
 3. BotBlocker checks installation state and initializes the core plugin.
 4. `BotBlockerAddons::includePreRunAddons()` loads only active compatible v2 traffic providers that explicitly opt into the pre-run contract.
 5. BotBlocker initializes and runs the main request-check cycle.
 6. `BotBlockerAddons::includeAll()` scans runtime add-ons and includes active compatible add-on core files for normal late runtime behavior.
 7. Admin menu, admin assets, and setup wizard are initialized.
+
+At step 4 and 6, `BotBlockerAddons::registerGatewayConfigs()` is called, which registers gateway configs declared under `gateway` (`early_init`, `mu_plugin`) from active addon manifests with `BotBlockerGateway`. This makes Gateway configs available to viewmodels, AJAX handlers, and other core consumers without requiring hardcoded addon-specific checks.
 
 Your add-on `core` file is included only when the add-on is active, or when BotBlocker needs the file to call a lifecycle/settings callback.
 
@@ -124,7 +126,7 @@ BotBlockerAddons::isCompatible( $addon, $core_version = '' )
 
 New third-party add-ons should target:
 
-- BotBlocker Security `1.6.20+`
+- BotBlocker Security `1.7.5+`
 - WordPress `5.0+`
 - PHP `7.4+`
 
@@ -135,7 +137,7 @@ Admin upload uses:
 - page: `BotBlocker -> Add-ons`
 - action: `admin_post_bbcs_upload_addon`
 - handler: `BotBlockerAddonHooks::handleUpload()`
-- installer: `bbcs_install_addon_package()`
+- installer: `BotBlockerAddonFiles::installAddonPackage()`
 
 The uploaded package is validated before it is moved into runtime storage:
 

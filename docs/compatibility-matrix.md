@@ -23,7 +23,7 @@ This matrix maps the developer kit against the BotBlocker Security add-on implem
 | `requires_php` | Enforced when declared | Documented | Keep recommended |
 | `core` file exists | Required for valid v2 package | Documented | Keep |
 | `main` file | Optional metadata/bootstrap | Documented | Keep recommended |
-| `settings.view` | Renders Tools tab only when active | Documented | Keep |
+| `settings.view` | Renders Add-ons page settings tab only when active | Documented | Keep |
 | `settings.option` | Required for generic v2 settings save | Documented | Strengthen |
 | `settings.sanitize` | Called when callable | Documented | Make mandatory for quality |
 | `assets.icon` | Used for Add-ons UI card when file exists | Documented | Keep |
@@ -33,8 +33,8 @@ This matrix maps the developer kit against the BotBlocker Security add-on implem
 
 | Package type | Recommended baseline |
 | --- | --- |
-| New third-party v2 package | `1.6.20+` |
-| Developer kit sample | `1.6.20` |
+| New third-party v2 package | `1.7.5+` |
+| Developer kit sample | `1.7.5` |
 | PHP | `7.4+` |
 | WordPress | `5.0+`, tested to `7.0` |
 
@@ -45,7 +45,7 @@ This matrix maps the developer kit against the BotBlocker Security add-on implem
 | Manifest option array | `acme_bbcs_sample_settings[enabled]` | Required/recommended |
 | Third-party v2 option array | `vendor_addon_settings[enabled]` | Required/recommended |
 | BotBlocker built-in plain field | `disable_emojis` | Do not copy for third-party v2 |
-| Shared BotBlocker option | `botblocker_tools_core_settings` | Internal/built-in only |
+| Shared BotBlocker option | `bbcs_speedup_settings` | Internal/built-in only |
 
 Third-party packages must not rely on BotBlocker core's hardcoded built-in option processing. They should use `settings.option` and render every field under that option array.
 
@@ -64,7 +64,7 @@ Third-party packages must not rely on BotBlocker core's hardcoded built-in optio
 | --- | --- | --- |
 | `install` | Package install/update installer | Validate/create package-owned data only when needed |
 | `activate` | Admin activation or update reactivation | Create defaults, schedule jobs |
-| `deactivate` | Admin deactivation, incompatible add-on, update/delete | Unschedule jobs, disable runtime side effects |
+| `deactivate` | Admin deactivation, add-on delete, BotBlocker deactivation | Unschedule jobs, disable runtime side effects |
 | `delete` | Before runtime folder deletion | Remove package-owned options/data when intended |
 | `update` | Package replacement | Migrate package-owned data |
 | `load` | Active add-on include on request | Lightweight diagnostics only |
@@ -80,7 +80,8 @@ Traffic add-ons are critical-risk code. Prefer post-check hooks for ordinary red
 | Redirect allowed frontend requests | Supported | `template_redirect` after BotBlocker security pages, see `traffic-and-redirect-addons.md` |
 | Redirect/check admin pages | Supported only when explicitly scoped | Capability checks, nonce checks, no public redirects |
 | Override BotBlocker block/check/deny decision | Supported only for `traffic_decision_provider` pre-run add-ons | `runtime.pre_run` manifest contract and decision provider from `core-hook-integration.md` |
-| Early-init traffic routing | Not supported by normal v2 add-ons | Separate early-init provider contract |
+| Weekly-report notifications (no decision influence) | Supported — cron only | Add-on cron + `bbcs_counters` statistics, see `addon-api-v2.md` |
+| Early-init traffic routing | Not supported by normal v2 add-ons | Separate `gateway.early_init` manifest contract (Layer 1 bootstrap deployment) |
 
 ## Known mismatches
 

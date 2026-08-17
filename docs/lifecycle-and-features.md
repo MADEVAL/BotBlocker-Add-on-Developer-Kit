@@ -43,7 +43,7 @@ call_user_func( $callback, $addon, $context, $event, $slug );
 | --- | --- | --- |
 | `install` | After a ZIP is validated and moved into runtime | Package-owned one-time setup |
 | `activate` | When admin activates an add-on, or an active add-on is reactivated after update | Defaults, cron scheduling, reversible integrations |
-| `deactivate` | When admin deactivates, update starts, delete starts, or compatibility fails | Unschedule, remove temporary integration state |
+| `deactivate` | When admin deactivates, or delete starts (with `reason => delete`), or BotBlocker itself is deactivated | Unschedule, remove temporary integration state |
 | `delete` | Before/while runtime folder is removed | Remove package-owned options/data when intended |
 | `update` | After package replacement/update install | Version migrations |
 | `load` | After an active compatible add-on core file is included | Lightweight runtime checks |
@@ -71,17 +71,16 @@ has_settings, settings_option, settings_sanitize, lifecycle, pre_run,
 features, manifest, readme
 ```
 
-`$context` is an event context array. The known `$context['reason']` values dispatched by core are:
+`$context` is an event context array. The known `$context` values dispatched by core are:
 
-| Reason | Event | Meaning |
+| Context | Event | Meaning |
 | --- | --- | --- |
-| `incompatible` | `deactivate` | The add-on was auto-deactivated because `requires_core` is no longer satisfied. |
-| `plugin_deactivation` | `deactivate` | BotBlocker itself is being deactivated. |
-| `auto_update` | `deactivate` / `activate` | The add-on is being updated from the marketplace. |
-| `auto_update_rollback` | `activate` | A failed auto-update is being rolled back to the previous version. |
-| `delete` | `delete` | The runtime folder is being removed. |
+| `array( 'reason' => 'delete' )` | `deactivate` | Delete of an active add-on starts; the `delete` event follows. |
+| `array( 'reason' => 'plugin_deactivation' )` | `deactivate` | BotBlocker itself is being deactivated. |
+| `array( 'from' => <old>, 'to' => <new> )` | `update` | Ledger-driven version migration after a package update. |
+| `array( 'phase' => 'pre_run' )` | pre-run callbacks | Pre-run registration and readiness callbacks receive this instead of a lifecycle event. |
 
-The pre-run registration and readiness callbacks instead receive `array( 'phase' => 'pre_run' )`. Activations and deactivations triggered directly by an admin from the Add-ons screen pass an empty or handler-supplied context, so always treat `$context` as optional and check keys before reading them.
+Activations and deactivations triggered directly by an admin from the Add-ons screen pass an empty context, so always treat `$context` as optional and check keys before reading them. Compatibility failures do NOT dispatch `deactivate`: BotBlocker silently drops the add-on from the active list and shows a compatibility alert instead.
 
 ### `lifecycle.file`
 
@@ -113,6 +112,12 @@ The legacy toggle hook remains available:
 do_action( 'bbcs_addon_toggled', $slug, $is_active );
 ```
 
+Pre-run providers also get a dedicated notification:
+
+```php
+do_action( 'bbcs_addon_pre_run_loaded', $slug, $addon );
+```
+
 Prefer v2 lifecycle callbacks for new code.
 
 ## Feature providers
@@ -136,21 +141,26 @@ if ( class_exists( 'BotBlockerAddons' )
 }
 ```
 
-Current core-recognized feature examples:
+Current core-recognized feature examples (as declared by built-in add-ons):
 
-- `early_init_provider`
-- `security_headers_provider`
+- `traffic_decision_provider` (bbcs-behavior, bbcs-xmlrpc-tunnel)
+- `behavioral_analysis_engine`
+- `cookie_consent_provider`
 - `login_url_provider`
 - `https_protocol_provider`
 - `malware_scanner_provider`
 - `performance_tools_provider`
+- `pusher_weekly_digest_provider`
+- `security_headers_provider`
+- `telegram_notifications_provider`
+- `truth_source_provider`
+- `xmlrpc_tunnel_provider`
 
-Only two feature names actually gate behavior inside BotBlocker core today:
+Only one feature name actually gates behavior inside BotBlocker core today:
 
 - `traffic_decision_provider` is required for the pre-run traffic decision contract (see `core-hook-integration.md`). Without it, `includePreRunAddons()` will not load the pre-run file.
-- `early_init_provider` triggers early-init site-map and wp-config consistency handling, and is special-cased so its core file still loads even when the add-on is marked incompatible (so it can self-disable cleanly).
 
-Every other feature name — whether built-in or your own — is a declarative capability tag. It does not change core behavior on its own; it is only discoverable through the helper methods below. Third-party add-ons may declare their own feature names. Use sanitized lowercase keys with underscores.
+Every other feature name - whether built-in or your own - is a declarative capability tag. It does not change core behavior on its own; it is only discoverable through the helper methods below. Third-party add-ons may declare their own feature names. Use sanitized lowercase keys with underscores. Note: early-init deployment is NOT feature-gated; it uses the `gateway.early_init` manifest contract and `bbcs-early-init` declares no features.
 
 ## BotBlockerAddons API for add-on authors
 

@@ -26,7 +26,7 @@ Traffic add-ons are operationally dangerous. Incorrect rules can redirect real c
 
 == Installation ==
 
-Create a ZIP that contains the acme-traffic-guard root folder. Upload it from BotBlocker -> Add-ons -> Upload ZIP. Activate it from the Installed tab, then configure it from BotBlocker -> Tools.
+Create a ZIP that contains the acme-traffic-guard root folder. Upload it from BotBlocker -> Add-ons -> Upload ZIP. Activate it from the Installed tab, then configure it from the add-on settings tab on BotBlocker -> Add-ons.
 
 == Validation ==
 

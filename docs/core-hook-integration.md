@@ -26,14 +26,14 @@ Implemented shape:
 
 ```php
 BotBlockerInstall::checkInstall();
-$plugin = new Cyber_Secure_Botblocker();
+$plugin = new BotBlockerSecurity();
 BotBlockerAddons::includePreRunAddons();
 $plugin->run();
 
 BotBlockerAddons::includeAll();
 ```
 
-This happens after `BotBlockerInstall::checkInstall()` and after `new Cyber_Secure_Botblocker()` has loaded BotBlocker classes, but before `$plugin->run()` calls `BotBlocker::initialize()`.
+This happens after `BotBlockerInstall::checkInstall()` and after `new BotBlockerSecurity()` has loaded BotBlocker classes, but before `$plugin->run()` calls `BotBlocker::initialize()`.
 
 Compatibility requirement:
 
@@ -74,6 +74,8 @@ BotBlocker refuses pre-run registration unless all are true:
 - `runtime.pre_run.register` is callable after the file is included;
 - the declared `ready_constant` is truthy or the declared `ready_callback` returns true.
 
+Weekly-report add-ons (Pusher/Telegram style) do NOT use this contract — they run on their own cron and read statistics from the database (see `docs/addon-api-v2.md`, "Weekly-report add-ons").
+
 ## Recommended hook points
 
 BotBlocker exposes these stages to registered traffic decision providers.
@@ -84,7 +86,8 @@ BotBlocker exposes these stages to registered traffic decision providers.
 | `after_request_data` | After server request fields are read and normalized, before proxy/IP info and country blocking. |
 | `after_visitor_data` | After full visitor data collection and visitor-based setting updates. |
 | `pre_core_rules` | After payment bypass and safe request checks, before white bot/IP/ASN/database/path rules. |
-| `post_core_rules` | After core rule checks, before request mode, headers, cookies, and simple bot checks. |
+| `post_core_rules` | After core rule checks, before core rate limiting. |
+| `post_rate_limit` | After core rate limiting, before request mode, headers, cookies, and simple bot checks. |
 | `before_final_allow` | Before BotBlocker finishes a normally allowed request. |
 
 ## Decision array contract
@@ -213,8 +216,10 @@ Suggested order:
 6. optional `pre_core_rules` decision
 7. core white bot/IP/ASN/database/path rules
 8. optional `post_core_rules` decision
-9. cookies/simple bot/referrer/hosting/language checks
-10. optional `before_final_allow` decision
+9. core rate limiting
+10. optional `post_rate_limit` decision
+11. cookies/simple bot/referrer/hosting/language checks
+12. optional `before_final_allow` decision
 
 If an add-on needs earlier priority than core blocks, it must be explicitly documented as a security policy add-on, not a marketing redirect add-on.
 

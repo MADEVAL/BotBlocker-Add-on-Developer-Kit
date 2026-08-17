@@ -60,6 +60,8 @@ Traffic provider example:
 
 The script validates the source folder, builds a one-root-folder ZIP, and validates the ZIP when PHP is available.
 
+**Important:** `package-addon.ps1` writes ZIP entries with forward-slash separators (System.IO.Compression). On Windows, `Compress-Archive` writes backslash separators; WordPress `unzip_file` does not normalize them, so such packages extract to literal `\`-named files on Linux hosting and the add-on fails to install. Do NOT use `Compress-Archive` for BotBlocker packages.
+
 Manual command from the directory that contains the add-on folder:
 
 ```powershell
@@ -101,9 +103,9 @@ Fix all validator errors before upload. Treat warnings as review items; a warnin
 6. Open the Installed tab.
 7. Review the add-on metadata.
 8. Activate the add-on.
-9. Configure settings from BotBlocker tools if the add-on declares a settings view.
+9. Configure settings from the add-on settings tab on `BotBlocker -> Add-ons` if the add-on declares a settings view.
 
-Settings pages are displayed only for active add-ons that have `settings.view`. The settings view appears in `BotBlocker -> Tools` as an add-on tab.
+Settings pages are displayed only for active add-ons that have `settings.view`. The settings view appears as an add-on settings tab on `BotBlocker -> Add-ons`.
 
 ## Image and icon rules
 

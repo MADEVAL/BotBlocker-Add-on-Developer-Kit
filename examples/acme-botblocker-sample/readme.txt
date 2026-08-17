@@ -28,7 +28,7 @@ Package from the developer kit root:
 
 ./tools/package-addon.ps1 -AddonPath ./examples/acme-botblocker-sample -DestinationPath ./dist/acme-botblocker-sample.zip
 
-After activation, open BotBlocker -> Tools and save the sample settings.
+After activation, open BotBlocker -> Add-ons and save the sample settings from the add-on settings tab.
 
 == Changelog ==
 

@@ -4,7 +4,7 @@
  * Description: Working sample package for BotBlocker Add-on API v2.
  * Version: 1.0.0
  * Author: ACME Security
- * Requires-Core: 1.6.20
+ * Requires-Core: 1.7.5
  * Requires PHP: 7.4
  * Text Domain: acme-botblocker-sample
  * License: GPLv2 or later

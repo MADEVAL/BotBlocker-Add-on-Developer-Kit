@@ -17,7 +17,7 @@ $recent   = is_array( $recent ) ? array_reverse( array_slice( $recent, -5 ) ) : 
             <?php if ( '' !== $icon_url ) : ?>
                 <img src="<?php echo esc_url( $icon_url ); ?>" alt="" class="img-fluid bbcs-info-image mb-3">
             <?php else : ?>
-                <i class="fa-solid fa-route fa-3x bbcs_color_blue mb-3" aria-hidden="true"></i>
+                <i class="fa-solid fa-route fa-3x bbcs_color_green mb-3" aria-hidden="true"></i>
             <?php endif; ?>
             <p class="bbcs-info-text"><?php esc_html_e( 'This add-on demonstrates the dangerous pre-run traffic decision provider contract. It can log or redirect matched traffic inside the BotBlocker request cycle.', 'acme-traffic-guard' ); ?></p>
             <p class="bbcs-info-text"><?php esc_html_e( 'Keep dry-run enabled until every rule is tested. Wrong traffic rules can redirect customers, break payment callbacks, create loops, or hide security pages.', 'acme-traffic-guard' ); ?></p>
@@ -73,12 +73,12 @@ $recent   = is_array( $recent ) ? array_reverse( array_slice( $recent, -5 ) ) : 
     <div class="col-xxl-3 col-xl-6 col-lg-6 col-sm-12 col-md-12">
         <h3 class="bbcs_settings_h3"><?php esc_html_e( 'Route Rule', 'acme-traffic-guard' ); ?></h3>
 
-        <div class="bbcs_select_input mb-2">
+        <div class="bbcs_text_input mb-2">
             <div class="bbcs_label_input_box">
                 <span class="bbcs-label-input"><?php esc_html_e( 'Decision stage', 'acme-traffic-guard' ); ?></span>
             </div>
-            <div class="bbcs_select_input_inner">
-                <select name="<?php echo esc_attr( $option ); ?>[stage]" class="bbcs_select_input_select">
+            <div class="bbcs_text_input_inner">
+                <select name="<?php echo esc_attr( $option ); ?>[stage]" class="bbcs_text_input_input">
                     <?php foreach ( acme_bbcs_traffic_guard_allowed_stages() as $stage ) : ?>
                         <option value="<?php echo esc_attr( $stage ); ?>" <?php selected( $settings['stage'] ?? '', $stage ); ?>><?php echo esc_html( $stage ); ?></option>
                     <?php endforeach; ?>
@@ -113,12 +113,12 @@ $recent   = is_array( $recent ) ? array_reverse( array_slice( $recent, -5 ) ) : 
             </div>
         </div>
 
-        <div class="bbcs_select_input mb-2">
+        <div class="bbcs_text_input mb-2">
             <div class="bbcs_label_input_box">
                 <span class="bbcs-label-input"><?php esc_html_e( 'Redirect status', 'acme-traffic-guard' ); ?></span>
             </div>
-            <div class="bbcs_select_input_inner">
-                <select name="<?php echo esc_attr( $option ); ?>[redirect_status]" class="bbcs_select_input_select">
+            <div class="bbcs_text_input_inner">
+                <select name="<?php echo esc_attr( $option ); ?>[redirect_status]" class="bbcs_text_input_input">
                     <?php foreach ( acme_bbcs_traffic_guard_allowed_statuses() as $status ) : ?>
                         <option value="<?php echo esc_attr( (string) $status ); ?>" <?php selected( (int) ( $settings['redirect_status'] ?? 302 ), $status ); ?>><?php echo esc_html( (string) $status ); ?></option>
                     <?php endforeach; ?>

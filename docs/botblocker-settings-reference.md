@@ -36,11 +36,11 @@ $secure_mode = (int) vendor_addon_bbcs_setting( 'secure_mode', 1 );
 
 | Setting | Default | Meaning |
 | --- | ---: | --- |
-| `secure_mode` | `1` | `1` frontend mode: security pages render later through WP templates. `2` full mode: BotBlocker outputs/stops earlier. |
+| `secure_mode` | `2` | `1` frontend mode: security pages render later through WP templates. `2` full mode: BotBlocker outputs/stops earlier. |
 | `disable` | `0` | Disables BotBlocker protection when `1`. |
 | `botblocker_force_check` | `0` | Forces check flow even if other checks pass. |
 | `force_cloud_validation` | `0` | Forces cloud validation when ultimate cloud mode is active. |
-| `unresponsive` | `0` | Defines behavior when cloud check fails. |
+| `unresponsive` | `1` | Defines behavior when cloud check fails. |
 
 Add-ons that redirect traffic must check security page flags before redirecting.
 
@@ -53,8 +53,8 @@ Add-ons that redirect traffic must check security page flags before redirecting.
 | `hits_per_user` | `500` | Daily hit counter threshold before cookie reset. |
 | `samesite` | `Lax` | Cookie SameSite policy. |
 | `vary_cookie` | `0` | Sends `Vary: Cookie` for verified visitors when enabled. |
-| `cache_ui_data` | `0` | Admin UI cache flag. |
-| `cache_ui_duration` | `3600` | Admin UI cache duration. |
+| `cache_ui_data` | `1` | Admin UI cache flag. |
+| `cache_ui_duration` | `1800` | Admin UI cache duration. |
 
 Do not overwrite BotBlocker cookies from an add-on. Use your own prefixed cookies when needed.
 
@@ -85,9 +85,9 @@ Header add-ons should use `send_headers` or the documented security headers prov
 | `block_ipv6_users` | `0` | Block IPv6 users. |
 | `block_ip_ptr_match` | `0` | Block when PTR equals IP. |
 | `block_proxy_users` | `1` | Block classic proxy header detection. |
-| `block_cf_users` | `1` | Block Cloudflare proxy detection when configured that way. |
-| `block_tor_users` | `0` | Reserved/traffic policy setting. |
-| `block_vpn_users` | `0` | Reserved/traffic policy setting. |
+| `block_cf_users` | `0` | Block Cloudflare proxy detection when configured that way. |
+| `block_tor_users` | `1` | Reserved/traffic policy setting. |
+| `block_vpn_users` | `1` | Reserved/traffic policy setting. |
 | `block_rkn` | `0` | Enables RKN/government network blocking flow. |
 | `hosting_block` | `0` | Blocks hosting/bad IP when cloud data marks it. |
 
@@ -97,7 +97,7 @@ For a traffic management add-on, read these settings to avoid contradicting the 
 
 | Setting | Default | Meaning |
 | --- | ---: | --- |
-| `bbcs_captcha_mode` | `1` | Captcha/check mode. Constant `BOTBLOCKER_CAPTCHA_MODE_SILENT` is `8`. |
+| `bbcs_captcha_mode` | `8` | Captcha/check mode. Default constant `BOTBLOCKER_CAPTCHA_MODE_DEFAULT` is `8` (Silent Auto-Verify). |
 | `bbcs_captcha_wait` | `30` | Captcha wait/timeout threshold. |
 | `bbcs_captcha_img_inline` | `1` | Captcha image rendering mode. |
 | `bbcs_captcha_img_pack` | `1` | Captcha image pack. |
@@ -108,8 +108,8 @@ For a traffic management add-on, read these settings to avoid contradicting the 
 | `recaptcha_v3_ipv6_block` | `0` | Disable v3 path for IPv6 when configured. |
 | `block_nojs_users` | `1` | Block users failing JavaScript/cookie verification. |
 | `block_adblocker_users` | `1` | Block adblock detection from browser verification. |
-| `block_incognito_users` | `1` | Block incognito anti-detect group. |
-| `block_simple_antidetect` | `1` | Block simple anti-detect group. |
+| `block_incognito_users` | `0` | Block incognito anti-detect group. |
+| `block_simple_antidetect` | `0` | Block simple anti-detect group. |
 | `block_override` | `0` | Block override/fingerprint group. |
 | `block_web_engine_options` | `0` | Block web engine mismatch group. |
 | `block_device_options` | `0` | Block device mismatch group. |
@@ -133,14 +133,14 @@ These settings control whether enriched fields are available. Add-ons must handl
 | Setting | Default | Meaning |
 | --- | ---: | --- |
 | `cloud_api_timeout` | `5` | Cloud API timeout. |
-| `cloud_api_type` | empty | Cloud API type. |
+| `cloud_api_type` | `cloud_basic` | Cloud API type. |
 | `cloud_api_email` | empty | Account email used in core hash/API flows. |
 | `cloud_api_key` | empty | Cloud API key. |
 | `cloud_api_pass` | empty | Secret used in verification hashes. |
 | `cloud_api_secret` | empty | Domain API secret. |
 | `cloud_api_tier` | empty | Cloud tier. |
-| `bbcs_api_url` | empty | Main API URL override/data. |
-| `bbcs_api_gs_url` | empty | Reserve API URL override/data. |
+| `bbcs_api_url` | `BOTBLOCKER_API_URL` | Main API URL override/data (`https://api.<server>/v2`). |
+| `bbcs_api_gs_url` | `BOTBLOCKER_API_GS_URL` | Reserve API URL override/data (`https://api.<reserve-server>/v2`). |
 
 Never print, log, or expose cloud credentials from `$bbcs->settings`.
 
@@ -190,7 +190,6 @@ Add-ons should use their own logging toggle and avoid writing to BotBlocker logs
 | `login_brutforce_secondary_block_time` | `1800` | Secondary block duration. |
 | `telegram_notification` | `0` | Telegram notifications. |
 | `email_notifications` | `0` | Email notifications. |
-| `pusher_notifications` | `0` | Pusher notifications. |
 | `critical_load_notifications` | `0` | Critical load notifications. |
 | `regular_notifications_frequency` | `disabled` | Regular notification frequency. |
 | `bbcs_2fa_enable` | `0` | 2FA integration setting. |
@@ -199,14 +198,14 @@ Add-ons should use their own logging toggle and avoid writing to BotBlocker logs
 
 | Setting | Default | Meaning |
 | --- | ---: | --- |
-| `memcached_enable` | `1` | Memcached cache enabled. |
+| `memcached_enable` | `0` | Memcached cache enabled. |
 | `memcached_host` | `127.0.0.1` | Memcached host. |
 | `memcached_port` | `11211` | Memcached port. |
 | `memcached_prefix` | `bb_` | Memcached key prefix. |
 | `redis_enable` | `0` | Redis cache enabled. |
 | `redis_host` | `127.0.0.1` | Redis host. |
 | `redis_port` | `6379` | Redis port. |
-| `redis_db` | `0` | Redis DB index. |
+| `redis_database` | `0` | Redis DB index. |
 | `redis_password` | empty | Redis password. |
 | `redis_prefix` | `bb_` | Redis key prefix. |
 
@@ -216,7 +215,7 @@ Never expose passwords or backend host details in frontend output.
 
 | Setting | Default | Meaning |
 | --- | ---: | --- |
-| `mu_enable` | `0` | MU integration flag. |
+| `mu_enable` | `1` | MU integration flag (defaults to `BOTBLOCKER_INTEGRATE_MU_PLUGINS`, which is `true`). |
 | `early_init_enable` | `0` | Early-init protection flag. |
 
 Normal v2 add-ons are WordPress-runtime add-ons. Early-init behavior needs a specific provider contract and cannot assume full WordPress/plugin APIs are available before WordPress loads.

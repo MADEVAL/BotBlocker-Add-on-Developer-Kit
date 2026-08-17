@@ -2,7 +2,7 @@
 
 Use this document when building `settings.view` for a BotBlocker Add-on API v2 package.
 
-The settings view is included inside `BotBlocker -> Tools` after the add-on is active. It is not a standalone WordPress admin page. Match the native BotBlocker layout so the add-on feels like part of the product.
+The settings view is included inside the add-on settings tab on `BotBlocker -> Add-ons` after the add-on is active. It is not a standalone WordPress admin page. Match the native BotBlocker layout so the add-on feels like part of the product.
 
 ## Required structure
 
@@ -29,7 +29,7 @@ $icon_url = function_exists( 'vendor_addon_asset_url' ) ? vendor_addon_asset_url
                 <?php // phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage ?>
                 <img src="<?php echo esc_url( $icon_url ); ?>" alt="" class="img-fluid bbcs-info-image mb-3">
             <?php else : ?>
-                <i class="fa-solid fa-puzzle-piece fa-3x bbcs_color_blue mb-3" aria-hidden="true"></i>
+                <i class="fa-solid fa-puzzle-piece fa-3x bbcs_color_green mb-3" aria-hidden="true"></i>
             <?php endif; ?>
 
             <p class="bbcs-info-text"><?php esc_html_e( 'Explain what the add-on does and where it acts.', 'vendor-addon' ); ?></p>
@@ -135,13 +135,15 @@ Normalize numbers with `absint()`, `min()`, and `max()` in the sanitizer.
 
 ## Textarea
 
+Use the same `bbcs_text_input` wrapper. BotBlocker styles `select` and `input` elements inside `.bbcs_text_input_inner`; textareas use the shared `bbcs_text_input_input` class (mirrored from the modal form pattern).
+
 ```php
-<div class="bbcs_textarea_input mb-2">
+<div class="bbcs_text_input mb-2">
     <div class="bbcs_label_input_box">
         <span class="bbcs-label-input"><?php esc_html_e( 'Message', 'vendor-addon' ); ?></span>
     </div>
-    <div class="bbcs_textarea_input_inner">
-        <textarea name="<?php echo esc_attr( $option ); ?>[message]" class="bbcs_textarea_input_input" rows="4" style="width: -webkit-fill-available;"><?php echo esc_textarea( $settings['message'] ?? '' ); ?></textarea>
+    <div class="bbcs_text_input_inner">
+        <textarea name="<?php echo esc_attr( $option ); ?>[message]" class="bbcs_text_input_input" rows="4" style="width: -webkit-fill-available;"><?php echo esc_textarea( $settings['message'] ?? '' ); ?></textarea>
     </div>
 </div>
 ```
@@ -150,13 +152,15 @@ Use `sanitize_textarea_field()` unless the field intentionally stores restricted
 
 ## Select
 
+Use the `bbcs_text_input` wrapper with the select inside `.bbcs_text_input_inner`:
+
 ```php
-<div class="bbcs_select_input mb-2">
+<div class="bbcs_text_input mb-2">
     <div class="bbcs_label_input_box">
         <span class="bbcs-label-input"><?php esc_html_e( 'Position', 'vendor-addon' ); ?></span>
     </div>
-    <div class="bbcs_select_input_inner">
-        <select name="<?php echo esc_attr( $option ); ?>[position]" class="bbcs_select_input_select">
+    <div class="bbcs_text_input_inner">
+        <select name="<?php echo esc_attr( $option ); ?>[position]" class="bbcs_text_input_input">
             <option value="bottom" <?php selected( 'bottom', $settings['position'] ?? 'bottom' ); ?>><?php esc_html_e( 'Bottom', 'vendor-addon' ); ?></option>
             <option value="top" <?php selected( 'top', $settings['position'] ?? 'bottom' ); ?>><?php esc_html_e( 'Top', 'vendor-addon' ); ?></option>
         </select>

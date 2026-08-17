@@ -18,12 +18,15 @@ function acme_bbcs_traffic_guard_defaults(): array {
 }
 
 function acme_bbcs_traffic_guard_allowed_stages(): array {
-    return array(
-        'after_visitor_data',
-        'pre_core_rules',
-        'post_core_rules',
-        'before_final_allow',
-    );
+	return array(
+		'before_prefly_checks',
+		'after_request_data',
+		'after_visitor_data',
+		'pre_core_rules',
+		'post_core_rules',
+		'post_rate_limit',
+		'before_final_allow',
+	);
 }
 
 function acme_bbcs_traffic_guard_allowed_statuses(): array {
