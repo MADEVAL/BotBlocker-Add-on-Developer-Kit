@@ -18,7 +18,7 @@ function acme_bbcs_sample_defaults(): array {
 }
 
 function acme_bbcs_sample_settings(): array {
-    $settings = get_option( 'acme_bbcs_sample_settings', array() );
+    $settings = BotBlockerMultisite::getOption( 'acme_bbcs_sample_settings', array() );
 
     return array_merge(
         acme_bbcs_sample_defaults(),
@@ -59,8 +59,8 @@ function acme_bbcs_sample_asset_url( string $relative ): string {
 function acme_bbcs_sample_activate( array $addon, array $context, string $event, string $slug ): void {
     unset( $addon, $context, $event, $slug );
 
-    if ( false === get_option( 'acme_bbcs_sample_settings', false ) ) {
-        update_option( 'acme_bbcs_sample_settings', acme_bbcs_sample_defaults() );
+    if ( false === BotBlockerMultisite::getOption( 'acme_bbcs_sample_settings', false ) ) {
+        BotBlockerMultisite::updateOption( 'acme_bbcs_sample_settings', acme_bbcs_sample_defaults() );
     }
 }
 
@@ -71,7 +71,7 @@ function acme_bbcs_sample_deactivate( array $addon, array $context, string $even
 function acme_bbcs_sample_delete( array $addon, array $context, string $event, string $slug ): void {
     unset( $addon, $context, $event, $slug );
 
-    delete_option( 'acme_bbcs_sample_settings' );
+    BotBlockerMultisite::deleteOption( 'acme_bbcs_sample_settings' );
 }
 
 function acme_bbcs_sample_send_header(): void {

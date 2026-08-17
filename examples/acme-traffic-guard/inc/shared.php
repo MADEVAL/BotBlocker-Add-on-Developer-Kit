@@ -34,7 +34,7 @@ function acme_bbcs_traffic_guard_allowed_statuses(): array {
 }
 
 function acme_bbcs_traffic_guard_settings(): array {
-    $settings = get_option( 'acme_bbcs_traffic_guard_settings', array() );
+    $settings = BotBlockerMultisite::getOption( 'acme_bbcs_traffic_guard_settings', array() );
 
     return acme_bbcs_traffic_guard_sanitize_settings(
         array_merge(
@@ -163,7 +163,7 @@ function acme_bbcs_traffic_guard_log_match( BotBlocker $bbcs, array $settings, s
         return;
     }
 
-    $events = get_option( 'acme_bbcs_traffic_guard_recent_matches', array() );
+    $events = BotBlockerMultisite::getOption( 'acme_bbcs_traffic_guard_recent_matches', array() );
     $events = is_array( $events ) ? $events : array();
 
     $ip = isset( $bbcs->ip ) ? (string) $bbcs->ip : '';
@@ -178,5 +178,5 @@ function acme_bbcs_traffic_guard_log_match( BotBlocker $bbcs, array $settings, s
         'target'   => sanitize_text_field( (string) $settings['target_path'] ),
     );
 
-    update_option( 'acme_bbcs_traffic_guard_recent_matches', array_slice( $events, -20 ), false );
+    BotBlockerMultisite::updateOption( 'acme_bbcs_traffic_guard_recent_matches', array_slice( $events, -20 ), false );
 }

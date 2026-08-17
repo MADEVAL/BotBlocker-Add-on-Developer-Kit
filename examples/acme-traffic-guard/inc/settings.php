@@ -8,7 +8,7 @@ require_once __DIR__ . '/shared.php';
 $settings = function_exists( 'acme_bbcs_traffic_guard_settings' ) ? acme_bbcs_traffic_guard_settings() : array();
 $option   = 'acme_bbcs_traffic_guard_settings';
 $icon_url = function_exists( 'acme_bbcs_traffic_guard_asset_url' ) ? acme_bbcs_traffic_guard_asset_url( 'assets/icon.svg' ) : '';
-$recent   = get_option( 'acme_bbcs_traffic_guard_recent_matches', array() );
+$recent   = BotBlockerMultisite::getOption( 'acme_bbcs_traffic_guard_recent_matches', array() );
 $recent   = is_array( $recent ) ? array_reverse( array_slice( $recent, -5 ) ) : array();
 ?>
 <div class="row">

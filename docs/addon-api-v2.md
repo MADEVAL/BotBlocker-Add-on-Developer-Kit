@@ -404,7 +404,7 @@ BotBlocker saves settings for active add-ons from the Add-ons page settings form
 4. BotBlocker reads the posted option array.
 5. BotBlocker includes the add-on core file if needed.
 6. BotBlocker calls `settings.sanitize` when callable.
-7. BotBlocker stores the sanitized array with `update_option()`.
+7. BotBlocker stores the sanitized array with `BotBlockerMultisite::updateOption()`.
 8. BotBlocker fires `bbcs_addon_settings_saved` with the posted array.
 
 Field names must be option-array names:
@@ -421,8 +421,8 @@ Use lifecycle callbacks for defaults and cleanup:
 
 ```php
 function vendor_addon_activate( array $addon, array $context, string $event, string $slug ): void {
-  if ( false === get_option( 'vendor_addon_settings', false ) ) {
-    update_option( 'vendor_addon_settings', array( 'enabled' => 1 ) );
+  if ( false === BotBlockerMultisite::getOption( 'vendor_addon_settings', false ) ) {
+    BotBlockerMultisite::updateOption( 'vendor_addon_settings', array( 'enabled' => 1 ) );
   }
 }
 ```

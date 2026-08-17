@@ -258,7 +258,7 @@ Use your own option/table/transient. Do not write directly to BotBlocker hit tab
 
 ```php
 function vendor_traffic_log_match( array $match, BotBlocker $bbcs ): void {
-    $events = get_option( 'vendor_traffic_recent_matches', array() );
+    $events = BotBlockerMultisite::getOption( 'vendor_traffic_recent_matches', array() );
     $events = is_array( $events ) ? $events : array();
 
     $events[] = array(
@@ -271,7 +271,7 @@ function vendor_traffic_log_match( array $match, BotBlocker $bbcs ): void {
     );
 
     $events = array_slice( $events, -100 );
-    update_option( 'vendor_traffic_recent_matches', $events, false );
+    BotBlockerMultisite::updateOption( 'vendor_traffic_recent_matches', $events, false );
 }
 ```
 

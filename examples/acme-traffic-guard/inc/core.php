@@ -17,8 +17,8 @@ function acme_bbcs_traffic_guard_asset_url( string $relative ): string {
 function acme_bbcs_traffic_guard_activate( array $addon, array $context, string $event, string $slug ): void {
     unset( $addon, $context, $event, $slug );
 
-    if ( false === get_option( 'acme_bbcs_traffic_guard_settings', false ) ) {
-        update_option( 'acme_bbcs_traffic_guard_settings', acme_bbcs_traffic_guard_defaults() );
+    if ( false === BotBlockerMultisite::getOption( 'acme_bbcs_traffic_guard_settings', false ) ) {
+        BotBlockerMultisite::updateOption( 'acme_bbcs_traffic_guard_settings', acme_bbcs_traffic_guard_defaults() );
     }
 }
 
@@ -29,8 +29,8 @@ function acme_bbcs_traffic_guard_deactivate( array $addon, array $context, strin
 function acme_bbcs_traffic_guard_delete( array $addon, array $context, string $event, string $slug ): void {
     unset( $addon, $context, $event, $slug );
 
-    delete_option( 'acme_bbcs_traffic_guard_settings' );
-    delete_option( 'acme_bbcs_traffic_guard_recent_matches' );
+    BotBlockerMultisite::deleteOption( 'acme_bbcs_traffic_guard_settings' );
+    BotBlockerMultisite::deleteOption( 'acme_bbcs_traffic_guard_recent_matches' );
 }
 
 function acme_bbcs_traffic_guard_admin_notice(): void {

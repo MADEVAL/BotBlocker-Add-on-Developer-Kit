@@ -13,7 +13,7 @@ BotBlocker Add-on API v2 settings are saved through the BotBlocker Add-ons page 
 7. BotBlocker reads `$_POST[settings.option]`.
 8. BotBlocker includes the add-on core file when needed.
 9. BotBlocker calls `settings.sanitize` when callable.
-10. BotBlocker stores the sanitized array with `update_option()`.
+10. BotBlocker stores the sanitized array with `BotBlockerMultisite::updateOption()`.
 11. BotBlocker fires the `bbcs_addon_settings_saved` action with the posted array.
 
 Settings are saved only for active add-ons.
@@ -67,14 +67,14 @@ function vendor_addon_defaults(): array {
 }
 ```
 
-Create defaults in the activation callback:
+Create defaults in the activation callback. Use the BotBlocker multisite option helpers so the call is network-aware:
 
 ```php
 function vendor_addon_activate( array $addon, array $context, string $event, string $slug ): void {
     unset( $addon, $context, $event, $slug );
 
-    if ( false === get_option( 'vendor_addon_settings', false ) ) {
-        update_option( 'vendor_addon_settings', vendor_addon_defaults() );
+    if ( false === BotBlockerMultisite::getOption( 'vendor_addon_settings', false ) ) {
+        BotBlockerMultisite::updateOption( 'vendor_addon_settings', vendor_addon_defaults() );
     }
 }
 ```
@@ -120,7 +120,7 @@ Use the `delete` lifecycle callback to remove package-owned options when that is
 ```php
 function vendor_addon_delete( array $addon, array $context, string $event, string $slug ): void {
     unset( $addon, $context, $event, $slug );
-    delete_option( 'vendor_addon_settings' );
+    BotBlockerMultisite::deleteOption( 'vendor_addon_settings' );
 }
 ```
 
