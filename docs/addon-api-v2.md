@@ -142,6 +142,7 @@ Always declare these fields in a well-formed v2 manifest. Internally, BotBlocker
 - `lifecycle.health_check`: callback for diagnostic flows.
 - `runtime.pre_run`: optional strict pre-run contract for in-cycle traffic decision providers.
 - `gateway`: optional gateway configurations for Layer 1 early-init / Layer 2 MU-plugin deployment.
+- `captcha`: optional captcha-mode registration for custom CAPTCHA providers (Turnstile, hCaptcha, ...). See [Captcha modes](#captcha-modes).
 - `ui`: optional UI integration metadata for the admin panel and ⌘K command palette.
 - `storage`: optional storage cleanup metadata for uninstall flows.
 - `features`: provider capability names exposed by the active add-on.
@@ -369,6 +370,86 @@ The `storage` field declares storage cleanup metadata for uninstall flows.
 The cache dirs are collected by `BotBlockerAddons::normalizeStorage()` and used by the BotBlocker uninstaller. `storage.cleanup_on_uninstall` is accepted by the normalizer but currently not consumed by the uninstaller — do not rely on it. See `known-core-contract-gaps.md`.
 
 This field is OPTIONAL — only needed when the add-on creates cache directories or requires special cleanup on uninstall.
+
+## Captcha modes
+
+A captcha add-on registers a NEW captcha mode (id >= 90) that plugs into the BotBlocker check page in both FULL and FRONTEND secure modes. Core owns the challenge token, the answer hash, and the verification flow — the add-on provides only provider params, a JS renderer, and a token-verification callback.
+
+```json
+"captcha": {
+    "modes": [{
+        "id": 90,
+        "name": "Cloudflare Turnstile",
+        "params_callback": "bbcs_turnstile_params",
+        "verify_callback": "bbcs_turnstile_verify",
+        "assets": {
+            "js": "assets/turnstile.js",
+            "external": ["https://challenges.cloudflare.com/turnstile/v0/api.js"]
+        },
+        "wizard": {
+            "icon": "assets/turnstile-preview.webp",
+            "subtitle": "Private access token verification. Invisible to users."
+        }
+    }]
+}
+```
+
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `captcha.modes[].id` | yes | Integer >= 90. Ids 0-8 are reserved for core modes. First active addon to register an id wins; duplicates are rejected with a debug log. |
+| `captcha.modes[].name` | yes | Admin display name. Untranslated — appears automatically in Settings → Captcha mode select and in the setup wizard card title. |
+| `captcha.modes[].params_callback` | yes | `fn(int $mode, BotBlocker $bbcs): array` returning `['mode' => $id, 'params' => [raw provider params]]`. Core injects `params.hash` (the pinned answer hash) — never set it yourself. |
+| `captcha.modes[].verify_callback` | yes | `fn(array $post_data, BotBlocker $bbcs): bool`. TRUE = token valid, FALSE = rejected. MUST NOT echo, terminate (`wp_die()`/`die()`), or return anything else. Network calls: `wp_remote_post()` with `'timeout' => 15`. |
+| `captcha.modes[].assets.js` | yes | Relative path to the renderer JS inside your package. Read and inlined by core on the check page — do not call `wp_enqueue_script()`. |
+| `captcha.modes[].assets.external` | no | HTTPS-only external script URLs for `<script src>`. Invalid entries are dropped at normalization. |
+| `captcha.modes[].wizard.icon` | no | Relative path to a preview image (webp/png/jpg/svg) inside your package. Shown on the standardized setup wizard card. |
+| `captcha.modes[].wizard.subtitle` | no | One-line card subtitle shown under the title in the setup wizard. |
+
+### How integration works
+
+- **Registration** happens pre-run for ACTIVE addons only; your `core` file is loaded before the shield runs, so both callbacks are plain functions there.
+- **Settings list**: your mode appears automatically in the Captcha Mode dropdown (label = manifest `name`). No filter needed. The legacy `bbcs_captcha_mode_options` filter still works for label overrides.
+- **Setup wizard**: a card is generated automatically from `wizard.icon` + `wizard.subtitle`; the JS reads `data-captcha` — no JS changes needed. The `bbcs_setup_wizard_captcha_modes` filter remains available for extra cards.
+- **Add-on settings** (sitekey/secret etc.) live on YOUR addon settings page via the standard `settings.option`/`settings.view` contract — core never renders them.
+
+### Renderer JS contract
+
+```javascript
+function renderMode90Captcha(params) {
+    // params.* = raw params from params_callback + params.hash (core-injected)
+    turnstile.render('#container', {
+        sitekey: params.sitekey,
+        callback: function(token) {
+            window.data += '&cf-turnstile-response=' + encodeURIComponent(token);
+            window[bbcsJsData.checkFunctionName]('post', window.data, params.hash);
+        }
+    });
+}
+```
+
+Rules:
+
+1. Function name MUST be `renderMode{ID}Captcha` (e.g. `renderMode90Captcha`). It receives `params` from your `params_callback` plus the core-injected `params.hash`.
+2. On success call `window[bbcsJsData.checkFunctionName]('post', window.data, params.hash)` — the third argument MUST be `params.hash`, otherwise the HMAC check fails.
+3. Append your provider token to `window.data` as your own POST field BEFORE the check call. The `challenge_token` itself is appended by core.
+4. Read ONLY `params.*`. Never touch detection fields, `challengeToken`, or the check function identity.
+
+### Fail-safe contract (guaranteed by core)
+
+Your add-on can never break the barrier — every failure degrades, none bans wrongly:
+
+| Failure | Behavior |
+|---------|----------|
+| Addon deactivated / uninstalled / files deleted | Check page falls back to full core mode 0 (simple button); tokens already issued degrade with a short ban retry, never a bypass |
+| `params_callback` throws or returns garbage | Full mode-0 fallback at render |
+| Renderer JS unreadable mid-request | Page data rebuilt as mode 0 server-side |
+| `verify_callback` throws / provider down | reCAPTCHA network-failure parity: mode downgraded, short RM wrong-click — visitor retries, never hard-banned |
+| Token rejected | Full `time_ban` wrong-click (this is the bot path) |
+| Token-less / invalid-token requests | Provider is NEVER called |
+
+### Example skeleton
+
+See `roadmap/md/addon-captcha-modes-design.md` §7 in the BotBlocker repository for a complete Turnstile example (manifest + `inc/core.php` + `assets/turnstile.js`).
 
 ## Settings
 

@@ -99,6 +99,7 @@ steps.
 | Post-check redirects vs pre-run providers | `docs/traffic-and-redirect-addons.md` |
 | In-cycle pre-run `traffic_decision_provider` contract | `docs/core-hook-integration.md` |
 | Weekly-report add-ons (cron only, no pre-run) | `docs/addon-api-v2.md` (Weekly-report add-ons) |
+| Custom CAPTCHA mode (Turnstile/hCaptcha-style provider) | `docs/addon-api-v2.md` (Captcha modes) |
 | Required security/quality bar | `docs/code-quality-standard.md` |
 | Static / package / WordPress / asset / multisite tests | `docs/testing.md` |
 | Kit/core/runtime compatibility comparison | `docs/compatibility-matrix.md` |
