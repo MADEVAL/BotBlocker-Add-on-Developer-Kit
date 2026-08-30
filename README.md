@@ -19,6 +19,7 @@ BotBlocker Security is a WordPress anti-bot firewall and proactive protection pl
 
 - `examples/acme-botblocker-sample`: canonical v2 sample add-on for normal late-loaded behavior.
 - `examples/acme-traffic-guard`: advanced v2 sample add-on for the pre-run `traffic_decision_provider` contract.
+- `examples/acme-hcaptcha`: minimal captcha add-on example — one external CAPTCHA provider (hCaptcha, mode 90) via the `captcha.modes` manifest contract.
 - `docs/botblocker-runtime-contract.md`: how BotBlocker scans, installs, activates, and loads add-ons.
 - `docs/addon-api-v2.md`: manifest, settings, lifecycle, feature providers, assets.
 - `docs/botblocker-core-object.md`: how to safely read the live `BotBlocker` object from an add-on.

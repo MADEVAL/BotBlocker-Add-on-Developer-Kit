@@ -449,7 +449,8 @@ Your add-on can never break the barrier — every failure degrades, none bans wr
 
 ### Example skeleton
 
-See `roadmap/md/addon-captcha-modes-design.md` §7 in the BotBlocker repository for a complete Turnstile example (manifest + `inc/core.php` + `assets/turnstile.js`).
+- Working example in this kit: `examples/acme-hcaptcha` (manifest + `inc/acme-hcaptcha-core.php` + `assets/hcaptcha.js`).
+- Complete two-provider reference in the BotBlocker repository: the bundled first-party add-on `addons/bbcs-hcaptcha` (hCaptcha mode 90 + Cloudflare Turnstile mode 91); design spec: `roadmap/md/2026-08-29-hcaptcha-addon-kit-design.md`.
 
 ## Settings
 

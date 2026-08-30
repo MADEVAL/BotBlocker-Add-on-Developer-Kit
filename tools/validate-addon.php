@@ -590,6 +590,82 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
             }
         }
     }
+
+    $captcha = is_array($manifest['captcha'] ?? null) ? $manifest['captcha'] : array();
+    $captcha_modes = is_array($captcha['modes'] ?? null) ? $captcha['modes'] : array();
+    $seen_captcha_ids = array();
+    foreach ($captcha_modes as $mode_index => $mode_cfg) {
+        if (!is_array($mode_cfg)) {
+            bbcs_validator_error($errors, 'captcha.modes[' . $mode_index . '] must be an object.');
+            continue;
+        }
+
+        $mode_id = $mode_cfg['id'] ?? null;
+        if (!is_numeric($mode_id) || (int) $mode_id < 90) {
+            bbcs_validator_error($errors, 'captcha.modes[' . $mode_index . '].id must be an integer >= 90 (core reserves 0-8).');
+            continue;
+        }
+        $mode_id = (int) $mode_id;
+        if (isset($seen_captcha_ids[$mode_id])) {
+            bbcs_validator_error($errors, 'captcha.modes[' . $mode_index . '].id ' . $mode_id . ' is declared twice in this manifest.');
+            continue;
+        }
+        $seen_captcha_ids[$mode_id] = true;
+
+        $mode_label = 'captcha.modes[' . $mode_index . '] (id ' . $mode_id . ')';
+
+        if (!isset($mode_cfg['name']) || trim((string) $mode_cfg['name']) === '') {
+            bbcs_validator_error($errors, $mode_label . '.name must be a non-empty admin display name.');
+        }
+
+        foreach (array('params_callback', 'verify_callback') as $captcha_callback_field) {
+            $callback = bbcs_validator_safe_callable_name((string) ($mode_cfg[$captcha_callback_field] ?? ''));
+            if ($callback === '') {
+                bbcs_validator_error($errors, $mode_label . '.' . $captcha_callback_field . ' must be a safe callable name.');
+            } elseif (strpos($callback, '::') === false && !isset($functions[$callback])) {
+                bbcs_validator_error($errors, $mode_label . '.' . $captcha_callback_field . ' not found in PHP files: ' . $callback);
+            }
+        }
+
+        $js_rel = bbcs_validator_safe_relative_path((string) (($mode_cfg['assets']['js'] ?? '')));
+        if ($js_rel === '') {
+            bbcs_validator_error($errors, $mode_label . '.assets.js must be a safe package-relative path.');
+        } else {
+            $js_abs = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $js_rel);
+            if (!is_file($js_abs)) {
+                bbcs_validator_error($errors, $mode_label . '.assets.js does not exist: ' . $js_rel);
+            } else {
+                $js_contents = (string) file_get_contents($js_abs);
+                if (strpos($js_contents, 'renderMode' . $mode_id . 'Captcha') === false) {
+                    bbcs_validator_error($errors, $mode_label . '.assets.js must define renderMode' . $mode_id . 'Captcha (core dispatches by this exact name).');
+                }
+            }
+        }
+
+        $external = $mode_cfg['assets']['external'] ?? array();
+        if (!empty($external)) {
+            if (!is_array($external)) {
+                bbcs_validator_error($errors, $mode_label . '.assets.external must be an array of https:// URLs.');
+            } else {
+                foreach ($external as $external_url) {
+                    if (!is_string($external_url) || strpos(trim($external_url), 'https://') !== 0) {
+                        bbcs_validator_error($errors, $mode_label . '.assets.external must contain https:// URLs only.');
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (isset($mode_cfg['wizard']) && is_array($mode_cfg['wizard'])) {
+            $wizard_icon_rel = bbcs_validator_safe_relative_path((string) ($mode_cfg['wizard']['icon'] ?? ''));
+            if ($wizard_icon_rel !== '') {
+                $wizard_icon_abs = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $wizard_icon_rel);
+                if (!file_exists($wizard_icon_abs)) {
+                    bbcs_validator_error($errors, $mode_label . '.wizard.icon does not exist: ' . $wizard_icon_rel);
+                }
+            }
+        }
+    }
 }
 
 if (is_file($target)) {

@@ -1,0 +1,41 @@
+{
+  "schema": "2.0",
+  "slug": "acme-hcaptcha",
+  "name": "ACME hCaptcha Example",
+  "version": "1.0.0",
+  "requires_core": "1.7.5",
+  "requires_php": "7.4",
+  "author": "ACME Examples",
+  "description": "Kit example: registers hCaptcha as an external CAPTCHA provider (mode 90) for the BotBlocker check page.",
+  "main": "acme-hcaptcha.php",
+  "core": "inc/acme-hcaptcha-core.php",
+  "settings": {
+    "view": "views/settings.php",
+    "option": "acme_hcaptcha_settings",
+    "sanitize": "acme_hcaptcha_sanitize_settings"
+  },
+  "assets": {
+    "icon": "acme-hcaptcha.svg",
+    "readme": "readme.txt"
+  },
+  "captcha": {
+    "modes": [
+      {
+        "id": 90,
+        "name": "ACME hCaptcha",
+        "params_callback": "acme_hcaptcha_mode_params",
+        "verify_callback": "acme_hcaptcha_mode_verify",
+        "assets": {
+          "js": "assets/hcaptcha.js",
+          "external": [
+            "https://js.hcaptcha.com/1/api.js"
+          ]
+        },
+        "wizard": {
+          "icon": "acme-hcaptcha.svg",
+          "subtitle": "Example hCaptcha provider"
+        }
+      }
+    ]
+  }
+}

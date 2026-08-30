@@ -145,6 +145,23 @@ when in-cycle decisions are truly required).
   `function vendor_addon_event( array $addon, array $context, string $event, string $slug ): void`
   and must be idempotent. Use your own prefixed function names.
 
+- **Captcha add-on** (`docs/addon-api-v2.md`, Captcha modes; example
+  `examples/acme-hcaptcha`): declare `captcha.modes` with ids >= 90 only.
+  Callbacks live in the `core` file (loaded pre-run). The renderer JS MUST define
+  `renderMode{ID}Captcha(params)`; on success append the provider token to
+  `window.data` and call
+  `window[bbcsJsData.checkFunctionName]('post', window.data, params.hash)`.
+
+  ```php
+  // verify_callback semantics (fail-safe contract):
+  '' === $token                    -> return false;   // provider never called
+  $data['success'] === true/false  -> return bool;    // false = bot path = wrong-click ban
+  outage / non-200 / bad JSON      -> throw RuntimeException; // core degrades to mode 1
+  ```
+
+  Never echo, never `die()`, never return non-bool from `verify_callback`.
+  Provider keys belong on YOUR addon settings page (`settings.option`), not in core.
+
 ## Hard rules (non-negotiable guardrails)
 
 - Prefix every symbol: function, class, option, action, filter, transient, cron
