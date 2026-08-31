@@ -66,9 +66,9 @@ So `health_check` always runs after all `load` callbacks across all add-ons have
 
 ```text
 slug, base, root, core, settings, icon, valid, name, author, description,
-version, requires_core, requires_php, schema, source_format ('v2' or 'v1'),
+version, requires_core, requires_php, max_core, schema, source_format ('v2' or 'v1'),
 has_settings, settings_option, settings_sanitize, lifecycle, pre_run,
-features, manifest, readme
+features, manifest, readme, gateway, ui, storage, captcha_modes
 ```
 
 `$context` is an event context array. The known `$context` values dispatched by core are:

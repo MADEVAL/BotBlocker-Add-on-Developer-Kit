@@ -233,7 +233,7 @@ Use these fields only when your add-on explicitly handles BotBlocker verificatio
 | `$bbcs->denied_data` | Denied page reason text when debug reason view is enabled. |
 | `$bbcs->block_data` | Block page reason text when debug reason view is enabled. |
 | `$bbcs->block_wait_seconds` | Temporary block countdown seconds. |
-| `$bbcs->csp_nonce` | CSP nonce in full secure mode. |
+| `$bbcs->csp_nonce` | **Does not exist in the core `$bbcs` object.** CSP is handled by the `bbcs-security-headers` add-on (MU phase), not by the core BotBlocker object; there is no CSP nonce property on `$bbcs`. |
 
 These are rendering internals. Add-ons should read them only for diagnostics.
 

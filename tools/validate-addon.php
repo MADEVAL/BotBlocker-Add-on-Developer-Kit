@@ -513,23 +513,28 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         if (is_file($settings_view)) {
             $contents = file_get_contents($settings_view);
             if (is_string($contents)) {
-                $has_literal_option_fields = preg_match('/name\s*=\s*["\']' . preg_quote($settings_option, '/') . '\[[^"\']+\]["\']/', $contents);
-                $has_dynamic_option_fields = preg_match('/name\s*=\s*["\'][^"\']*<\?php\s+echo\s+esc_attr\([^"\']*option[^"\']*\[[^"\']+\]["\']/i', $contents);
+                // Component-based views (BotBlocker\Component\*) render fields at
+                // runtime; the literal name= regexes below are meaningless for them.
+                $is_component_view = strpos($contents, 'BotBlocker\Component\\') !== false;
+                if (!$is_component_view) {
+                    $has_literal_option_fields = preg_match('/name\s*=\s*["\']' . preg_quote($settings_option, '/') . '\[[^"\']+\]["\']/', $contents);
+                    $has_dynamic_option_fields = preg_match('/name\s*=\s*["\'][^"\']*<\?php\s+echo\s+esc_attr\([^"\']*option[^"\']*\[[^"\']+\]["\']/i', $contents);
 
-                if (!$has_literal_option_fields && !$has_dynamic_option_fields) {
-                    bbcs_validator_warning($warnings, 'Settings view should render fields named like ' . $settings_option . '[field].');
-                }
+                    if (!$has_literal_option_fields && !$has_dynamic_option_fields) {
+                        bbcs_validator_warning($warnings, 'Settings view should render fields named like ' . $settings_option . '[field].');
+                    }
 
-                if (preg_match_all('/<(input|select|textarea)\b[^>]*\bname\s*=\s*["\']([^"\']+)["\']/i', $contents, $matches, PREG_SET_ORDER)) {
-                    foreach ($matches as $match) {
-                        $name = $match[2];
-                        if ($name === '' || strpos($name, $settings_option . '[') === 0) {
-                            continue;
+                    if (preg_match_all('/<(input|select|textarea)\b[^>]*\bname\s*=\s*["\']([^"\']+)["\']/i', $contents, $matches, PREG_SET_ORDER)) {
+                        foreach ($matches as $match) {
+                            $name = $match[2];
+                            if ($name === '' || strpos($name, $settings_option . '[') === 0) {
+                                continue;
+                            }
+                            if (strpos($name, '<?php') !== false && stripos($name, 'option' ) !== false) {
+                                continue;
+                            }
+                            bbcs_validator_warning($warnings, 'Settings field is not under settings.option: ' . $name);
                         }
-                        if (strpos($name, '<?php') !== false && stripos($name, 'option' ) !== false) {
-                            continue;
-                        }
-                        bbcs_validator_warning($warnings, 'Settings field is not under settings.option: ' . $name);
                     }
                 }
             }
@@ -544,10 +549,20 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
     }
 
     if (!empty($manifest['assets']) && is_array($manifest['assets'])) {
-        $core_rel = bbcs_validator_safe_relative_path((string) ($manifest['core'] ?? ''));
-        $core_path = $core_rel !== '' ? $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $core_rel) : '';
-        $core_contents = is_file($core_path) ? file_get_contents($core_path) : '';
-        if (is_string($core_contents) && $core_contents !== '' && strpos($core_contents, 'BotBlockerAddons::fileUrl') === false) {
+        // Scan the whole package, not just the core file: first-party add-ons
+        // call fileUrl through wrappers (e.g. assetUrl()) defined in sibling files.
+        $uses_file_url = false;
+        foreach ($all_files as $file) {
+            if (bbcs_validator_is_vendor($file) || !preg_match('/\.php$/', $file)) {
+                continue;
+            }
+            $php_contents = file_get_contents($file);
+            if (is_string($php_contents) && strpos($php_contents, 'BotBlockerAddons::fileUrl') !== false) {
+                $uses_file_url = true;
+                break;
+            }
+        }
+        if (!$uses_file_url) {
             bbcs_validator_warning($warnings, 'Package declares assets; core should use BotBlockerAddons::fileUrl() for runtime URLs when assets are enqueued or rendered.');
         }
     }

@@ -62,11 +62,7 @@ The script validates the source folder, builds a one-root-folder ZIP, and valida
 
 **Important:** `package-addon.ps1` writes ZIP entries with forward-slash separators (System.IO.Compression). On Windows, `Compress-Archive` writes backslash separators; WordPress `unzip_file` does not normalize them, so such packages extract to literal `\`-named files on Linux hosting and the add-on fails to install. Do NOT use `Compress-Archive` for BotBlocker packages.
 
-Manual command from the directory that contains the add-on folder:
-
-```powershell
-Compress-Archive -Path .\acme-botblocker-sample -DestinationPath .\acme-botblocker-sample.zip -Force
-```
+There is no safe native PowerShell manual equivalent on Windows: `Compress-Archive` writes backslash separators (see the Important note above), so always use `tools/package-addon.ps1`. On macOS or Linux use the `zip -r` command in the next section.
 
 ## macOS or Linux packaging
 

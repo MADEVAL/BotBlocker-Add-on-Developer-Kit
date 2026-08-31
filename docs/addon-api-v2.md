@@ -486,8 +486,10 @@ BotBlocker saves settings for active add-ons from the Add-ons page settings form
 4. BotBlocker reads the posted option array.
 5. BotBlocker includes the add-on core file if needed.
 6. BotBlocker calls `settings.sanitize` when callable.
-7. BotBlocker stores the sanitized array with `BotBlockerMultisite::updateOption()`.
+7. BotBlocker stores the sanitized array with `update_option()`.
 8. BotBlocker fires `bbcs_addon_settings_saved` with the posted array.
+
+Add-on settings options are per-site (not network-scoped). `BotBlockerMultisite::getOption()`/`updateOption()` use `get_site_option()`/`update_site_option()` only for the two core network keys (`bbcs_network_license_key`, `bbcs_network_cloud_api_key`); an add-on `settings.option` is never one of them, so the wrapper and plain `update_option()`/`get_option()` resolve to the same site option. Add-on code reads its settings with `BotBlockerMultisite::getOption()` (the read wrapper falls through to `get_option()` for non-network keys).
 
 Field names must be option-array names:
 

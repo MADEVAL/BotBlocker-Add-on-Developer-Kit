@@ -57,7 +57,7 @@ BotBlocker boots from `botblocker-security.php`.
 6. `BotBlockerAddons::includeAll()` scans runtime add-ons and includes active compatible add-on core files for normal late runtime behavior.
 7. Admin menu, admin assets, and setup wizard are initialized.
 
-At step 4 and 6, `BotBlockerAddons::registerGatewayConfigs()` is called, which registers gateway configs declared under `gateway` (`early_init`, `mu_plugin`) from active addon manifests with `BotBlockerGateway`. This makes Gateway configs available to viewmodels, AJAX handlers, and other core consumers without requiring hardcoded addon-specific checks.
+At step 6, `BotBlockerAddons::registerGatewayConfigs()` is called (step 4 pre-run does NOT call it), which registers gateway configs declared under `gateway` (`early_init`, `mu_plugin`) from active addon manifests with `BotBlockerGateway`. This makes Gateway configs available to viewmodels, AJAX handlers, and other core consumers without requiring hardcoded addon-specific checks.
 
 Your add-on `core` file is included only when the add-on is active, or when BotBlocker needs the file to call a lifecycle/settings callback.
 
