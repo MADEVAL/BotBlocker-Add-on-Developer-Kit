@@ -159,21 +159,10 @@ Displays a lightweight cookie consent banner with editable notice text, policy l
 
 ## Root metadata file
 
-The `main` file is a human-readable root file and optional bootstrap. Keep its header aligned with the manifest.
+The `main` file is the executable entrypoint — an optional bootstrap. All metadata lives in `bbcs-addon.json`; the PHP file carries no plugin header.
 
 ```php
 <?php
-/**
- * Plugin Name: Vendor Add-on
- * Description: Adds a focused BotBlocker extension.
- * Version: 1.0.0
- * Author: Vendor Name
- * Requires-Core: 1.7.5
- * Requires PHP: 7.4
- * Text Domain: vendor-addon
- * License: GPLv2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
