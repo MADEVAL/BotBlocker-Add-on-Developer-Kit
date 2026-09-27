@@ -467,9 +467,12 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
     $all_files = bbcs_validator_collect_files($root);
     $builtin_options = array(
         'bbcs_core_settings',
+        'bbcs_antispam_settings',
         'bbcs_behavior_settings',
         'bbcs_cookie_alert_settings',
         'bbcs_cron_settings',
+        'bbcs_firewall_export_settings',
+        'bbcs_hcaptcha_settings',
         'bbcs_headers_settings',
         'bbcs_https_protocol_settings',
         'bbcs_login_settings',
@@ -477,7 +480,7 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         'bbcs_pusher_settings',
         'bbcs_speedup_settings',
         'bbcs_telegram_settings',
-        'bbcs_truth_source_settings',
+        'bbcs_turnstile_settings',
         'bbcs_xmlrpc_tunnel_settings',
     );
     foreach ($all_files as $file) {
@@ -639,6 +642,17 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
                 bbcs_validator_error($errors, $mode_label . '.' . $captcha_callback_field . ' must be a safe callable name.');
             } elseif (strpos($callback, '::') === false && !isset($functions[$callback])) {
                 bbcs_validator_error($errors, $mode_label . '.' . $captcha_callback_field . ' not found in PHP files: ' . $callback);
+            }
+        }
+
+        // keys_callback is optional; when declared, core rejects the whole mode if
+        // it is not callable (BotBlockerCaptchaRegistry::register()).
+        if (isset($mode_cfg['keys_callback']) && trim((string) $mode_cfg['keys_callback']) !== '') {
+            $keys_callback = bbcs_validator_safe_callable_name((string) $mode_cfg['keys_callback']);
+            if ($keys_callback === '') {
+                bbcs_validator_error($errors, $mode_label . '.keys_callback must be a safe callable name.');
+            } elseif (strpos($keys_callback, '::') === false && !isset($functions[$keys_callback])) {
+                bbcs_validator_error($errors, $mode_label . '.keys_callback not found in PHP files: ' . $keys_callback);
             }
         }
 

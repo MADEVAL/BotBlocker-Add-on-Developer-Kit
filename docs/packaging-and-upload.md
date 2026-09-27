@@ -167,13 +167,19 @@ Feature-specific footer links example:
 
 - `zip_extension`: the uploaded file is not a ZIP.
 - `zip_unsafe_path`: the ZIP contains a dangerous path.
+- `zip_too_large`: the ZIP is larger than 20 MB.
+- `zip_unsupported`: the server has no PHP `ZipArchive`; the package cannot be validated.
 - `package_root`: the ZIP does not contain exactly one root folder.
 - `package_slug`: the root folder is not a valid slug.
+- `manifest_missing`: the package root has no `bbcs-addon.json`.
 - `slug_mismatch`: root folder and manifest slug do not match.
-- `package_invalid`: required manifest data or core file is missing.
+- `package_invalid`: required manifest data is missing or the declared `core` file does not exist.
 - `requires_core`: the target BotBlocker version is too old.
 - `requires_php`: the target PHP version is too old.
+- `backup_failed`: an existing install could not be backed up before replacement.
 - `move_failed`: WordPress could not move the validated package into runtime storage.
+
+Installing from the BotBlocker marketplace (rather than an upload) requires an active PRO license; a missing license returns `pro_required`.
 
 ## Versioning
 

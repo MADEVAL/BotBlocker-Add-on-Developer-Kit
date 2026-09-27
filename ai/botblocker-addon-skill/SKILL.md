@@ -40,7 +40,7 @@ Firewall. It protects production traffic through request checks, rules, CAPTCHA
 layers, logs, live monitoring, early-init protection, and add-on extensions.
 
 - Baseline: **BotBlocker Security `1.7.5`** (minimum version for the Add-on
-  API v2 system), WordPress `5.0+` (tested to `7.0`), PHP `7.4+`.
+  API v2 system), WordPress `5.9+` (tested to `7.1`), PHP `7.4+`.
 - Add-ons must extend protection, integrations, reporting, diagnostics, admin
   workflows, privacy notices, or safe automation **without weakening core**.
 
@@ -60,8 +60,9 @@ layers, logs, live monitoring, early-init protection, and add-on extensions.
 
 Building Add-on API v2 packages; editing `bbcs-addon.json`; implementing core
 files, settings views, sanitizers, lifecycle callbacks, or feature providers;
-packaging/validating add-on ZIPs; reviewing compatibility with `1.7.5+`;
-preserving v1 compatibility when touching shared scanner/loader code.
+packaging/validating add-on ZIPs; reviewing compatibility with `1.7.5+`.
+Current core is Add-on API v2 only - a package without `bbcs-addon.json` is
+skipped by the scanner and never loads.
 
 ## Do NOT use for
 
@@ -147,9 +148,11 @@ when in-cycle decisions are truly required).
 
 - **Captcha add-on** (`docs/addon-api-v2.md`, Captcha modes; example
   `examples/acme-hcaptcha`): declare `captcha.modes` with ids >= 90 only.
-  Callbacks live in the `core` file (loaded pre-run). The renderer JS MUST define
-  `renderMode{ID}Captcha(params)`; on success append the provider token to
-  `window.data` and call
+  Callbacks live in the `core` file (loaded pre-run). Declare an optional
+  `keys_callback: fn(): bool` readiness probe so the mode stays disabled in the
+  CAPTCHA dropdown until the provider keys are stored. The renderer JS MUST
+  define `renderMode{ID}Captcha(params)`; on success append the provider token
+  to `window.data` and call
   `window[bbcsJsData.checkFunctionName]('post', window.data, params.hash)`.
 
   ```php

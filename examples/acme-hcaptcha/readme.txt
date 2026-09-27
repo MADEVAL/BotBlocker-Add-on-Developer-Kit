@@ -3,9 +3,12 @@ ACME hCaptcha — Add-on Kit example for a captcha add-on.
 This example shows the minimal captcha add-on contract (BotBlocker Add-on API v2):
 
 - Manifest `captcha.modes` declares ONE mode: id 90 (ids >= 90 only; 0-8 are core-owned),
-  with `params_callback` and `verify_callback` living in `inc/acme-hcaptcha-core.php`.
-- `assets.external` loads the provider script (https://js.hcaptcha.com/1/api.js) on the
-  check page; core inlines `assets/hcaptcha.js` itself — never call wp_enqueue_script().
+  with `params_callback`, `verify_callback`, and the optional `keys_callback` readiness probe
+  living in `inc/acme-hcaptcha-core.php`. `keys_callback` keeps the mode disabled in the
+  CAPTCHA dropdown until the site key and secret are stored.
+- `assets.external` loads the provider script with explicit rendering
+  (https://js.hcaptcha.com/1/api.js?render=explicit) on the check page; core inlines
+  `assets/hcaptcha.js` itself — never call wp_enqueue_script().
 - `params_callback` returns `['mode' => 90, 'params' => [...]]`; core injects
   `params.hash` — never set it yourself.
 - The renderer JS MUST define `renderMode90Captcha(params)`; on success it appends the

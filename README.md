@@ -9,7 +9,7 @@ BotBlocker Security is a WordPress anti-bot firewall and proactive protection pl
 ## Baseline
 
 - BotBlocker Security: `1.7.5+`
-- WordPress: `5.0+`, tested up to `7.0`
+- WordPress: `5.9+`, tested up to `7.1`
 - PHP: `7.4+`
 - Add-on format: Add-on API v2 with `bbcs-addon.json`
 

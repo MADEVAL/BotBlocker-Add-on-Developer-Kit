@@ -36,7 +36,7 @@ This matrix maps the developer kit against the BotBlocker Security add-on implem
 | New third-party v2 package | `1.7.5+` |
 | Developer kit sample | `1.7.5` |
 | PHP | `7.4+` |
-| WordPress | `5.0+`, tested to `7.0` |
+| WordPress | `5.9+`, tested to `7.1` |
 
 ## Settings patterns
 

@@ -15,6 +15,7 @@ function renderMode90Captcha(params) {
             size: params.size || "normal",
             callback: function (token) {
                 window.data += "&h-captcha-response=" + encodeURIComponent(token);
+                box.innerHTML = params.loading_text || "Verifying...";
                 window[bbcsJsData.checkFunctionName]("post", window.data, params.hash);
             }
         });

@@ -68,8 +68,8 @@ Use WordPress.org hosted media for public documentation and repository visuals.
 Verified from WordPress.org plugin metadata during preparation:
 
 - Minimum version for the Add-on API v2 system: `1.7.5`
-- Requires WordPress: `5.0` or newer
-- Tested up to: `7.0`
+- Requires WordPress: `5.9` or newer
+- Tested up to: `7.1`
 - Requires PHP: `7.4` or newer
 - Active installations: `3,000+`
 - Rating: `5 out of 5`, based on `9` ratings

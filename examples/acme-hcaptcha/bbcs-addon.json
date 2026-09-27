@@ -25,10 +25,11 @@
         "name": "ACME hCaptcha",
         "params_callback": "acme_hcaptcha_mode_params",
         "verify_callback": "acme_hcaptcha_mode_verify",
+        "keys_callback": "acme_hcaptcha_keys_ready",
         "assets": {
           "js": "assets/hcaptcha.js",
           "external": [
-            "https://js.hcaptcha.com/1/api.js"
+            "https://js.hcaptcha.com/1/api.js?render=explicit"
           ]
         },
         "wizard": {

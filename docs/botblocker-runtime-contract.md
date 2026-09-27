@@ -82,9 +82,8 @@ It scans `BotBlockerMultisite::getAddonsDir()` and ignores backup directories en
 
 For every runtime folder:
 
-1. If `bbcs-addon.json` exists, BotBlocker parses it as v2.
-2. Otherwise BotBlocker falls back to legacy v1 scanning.
-3. Invalid add-ons are shown as broken and are not activated.
+1. BotBlocker reads `bbcs-addon.json`. There is no legacy v1 scanner in current core: a folder without a manifest is skipped entirely.
+2. Invalid add-ons are shown as broken and are not activated.
 
 The v2 parser normalizes:
 
@@ -127,7 +126,7 @@ BotBlockerAddons::isCompatible( $addon, $core_version = '' )
 New third-party add-ons should target:
 
 - BotBlocker Security `1.7.5+`
-- WordPress `5.0+`
+- WordPress `5.9+`
 - PHP `7.4+`
 
 ## Upload and install flow

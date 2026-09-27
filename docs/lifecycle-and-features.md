@@ -66,7 +66,7 @@ So `health_check` always runs after all `load` callbacks across all add-ons have
 
 ```text
 slug, base, root, core, settings, icon, valid, name, author, description,
-version, requires_core, requires_php, max_core, schema, source_format ('v2' or 'v1'),
+version, requires_core, requires_php, max_core, schema, source_format (always 'v2'),
 has_settings, settings_option, settings_sanitize, lifecycle, pre_run,
 features, manifest, readme, gateway, ui, storage, captcha_modes
 ```
@@ -144,8 +144,10 @@ if ( class_exists( 'BotBlockerAddons' )
 Current core-recognized feature examples (as declared by built-in add-ons):
 
 - `traffic_decision_provider` (bbcs-behavior, bbcs-xmlrpc-tunnel)
+- `antispam_comments_provider`
 - `behavioral_analysis_engine`
 - `cookie_consent_provider`
+- `firewall_export_provider`
 - `login_url_provider`
 - `https_protocol_provider`
 - `malware_scanner_provider`
@@ -153,7 +155,6 @@ Current core-recognized feature examples (as declared by built-in add-ons):
 - `pusher_weekly_digest_provider`
 - `security_headers_provider`
 - `telegram_notifications_provider`
-- `truth_source_provider`
 - `xmlrpc_tunnel_provider`
 
 Only one feature name actually gates behavior inside BotBlocker core today:

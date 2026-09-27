@@ -16,16 +16,29 @@ function acme_hcaptcha_read_settings(): array {
 	return acme_hcaptcha_sanitize_settings( is_array( $saved ) ? $saved : array() );
 }
 
+function acme_hcaptcha_asset_url( string $relative ): string {
+	return class_exists( 'BotBlockerAddons' )
+		? BotBlockerAddons::fileUrl( 'acme-hcaptcha', $relative )
+		: '';
+}
+
 function acme_hcaptcha_mode_params( int $mode, $bbcs ): array {
 	$s = acme_hcaptcha_read_settings();
 	return array(
 		'mode'   => $mode,
 		'params' => array(
-			'sitekey' => $s['sitekey'],
-			'theme'   => 'light',
-			'size'    => 'normal',
+			'sitekey'      => $s['sitekey'],
+			'theme'        => 'light',
+			'size'         => 'normal',
+			'loading_text' => 'Verifying...',
 		),
 	);
+}
+
+function acme_hcaptcha_keys_ready(): bool {
+	$s = acme_hcaptcha_read_settings();
+
+	return '' !== $s['sitekey'] && '' !== $s['secret'];
 }
 
 function acme_hcaptcha_mode_verify( array $post_data, $bbcs ): bool {

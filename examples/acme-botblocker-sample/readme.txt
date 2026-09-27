@@ -1,7 +1,7 @@
 === ACME BotBlocker Sample Add-on ===
 Contributors: acme
-Requires at least: 5.0
-Tested up to: 7.0
+Requires at least: 5.9
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 1.0.0
 License: GPLv2 or later
