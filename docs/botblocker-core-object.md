@@ -155,10 +155,10 @@ Current `BotBlocker::run()` flow (the decision stages where pre-run traffic prov
 17. addon decisions at stage `post_core_rules`
 18. `apply_core_rate_limit()`
 19. addon decisions at stage `post_rate_limit`
-20. payment bypass partial flow, `process_headers()`, `process_cookies()`
+20. payment bypass partial flow, `process_cookies()`
 21. `perform_simple_bot_checks()`, `validate_referer()`, `check_referer_get_params()`, `check_hosting()`, `check_language_mismatch()`, optional force check
 22. addon decisions at stage `before_final_allow`
-23. `bbcs_botblocker_allowed_request` action, `set_x_robot_headers()`
+23. `bbcs_botblocker_allowed_request` action
 
 The most useful read points are:
 
