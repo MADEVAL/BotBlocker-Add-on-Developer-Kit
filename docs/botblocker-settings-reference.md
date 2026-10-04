@@ -106,7 +106,6 @@ For a traffic management add-on, read these settings to avoid contradicting the 
 | `recaptcha_key3`, `recaptcha_secret3` | empty | reCAPTCHA v3 credentials. |
 | `recaptcha_tresshold` | `0.5` | reCAPTCHA v3 score threshold. |
 | `recaptcha_v3_ipv6_block` | `0` | Disable v3 path for IPv6 when configured. |
-| `block_nojs_users` | `1` | Block users failing JavaScript/cookie verification. |
 | `block_adblocker_users` | `1` | Block adblock detection from browser verification. |
 | `block_incognito_users` | `0` | Block incognito anti-detect group. |
 | `block_simple_antidetect` | `0` | Block simple anti-detect group. |
@@ -139,8 +138,6 @@ These settings control whether enriched fields are available. Add-ons must handl
 | `cloud_api_pass` | empty | Secret used in verification hashes. |
 | `cloud_api_secret` | empty | Domain API secret. |
 | `cloud_api_tier` | empty | Cloud tier. |
-| `bbcs_api_url` | `BOTBLOCKER_API_URL` | Main API URL override/data (`https://api.<server>/v2`). |
-| `bbcs_api_gs_url` | `BOTBLOCKER_API_GS_URL` | Reserve API URL override/data (`https://api.<reserve-server>/v2`). |
 
 Never print, log, or expose cloud credentials from `$bbcs->settings`.
 
@@ -189,9 +186,6 @@ Add-ons should use their own logging toggle and avoid writing to BotBlocker logs
 | `login_brutforce_primary_block_time` | `900` | Primary block duration. |
 | `login_brutforce_secondary_block_time` | `1800` | Secondary block duration. |
 | `telegram_notification` | `0` | Telegram notifications. |
-| `email_notifications` | `0` | Email notifications. |
-| `critical_load_notifications` | `0` | Critical load notifications. |
-| `regular_notifications_frequency` | `disabled` | Regular notification frequency. |
 | `bbcs_2fa_enable` | `0` | 2FA integration setting. |
 
 ## Storage/cache backend settings
@@ -228,8 +222,7 @@ Normal v2 add-ons are WordPress-runtime add-ons. Early-init behavior needs a spe
 | `action_disable` | empty | Secret action to disable for request. |
 | `action_off` | empty | Secret action to turn protection off. |
 | `action_on` | empty | Secret action to turn protection on. |
-| `salt`, `salt_pz`, `salt_ps`, `salt_bb` | empty | Core verification salts. |
-| `host_key` | empty | Host key. |
+| `salt` | empty | Core verification salt. |
 | `time_ban` | `200` | First CAPTCHA failure ban time. |
 | `time_ban_2` | `400` | Repeated CAPTCHA failure ban time. |
 
