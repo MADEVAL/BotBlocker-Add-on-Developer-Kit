@@ -77,6 +77,8 @@ function acme_bbcs_sample_ability_definition(): array {
 - `read` -> `readonly=true`, `destructive=false`;
 - `manage` / `danger` -> `readonly=false`, `destructive=true`.
 
+The definition array may also include `capability` to override the default `manage_options` requirement. Core still applies `bbcs_ability_required_capability` and `bbcs_ability_capability_by_risk` on top of it.
+
 ## Execute callback
 
 ```php
