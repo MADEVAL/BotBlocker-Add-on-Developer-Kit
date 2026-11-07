@@ -15,7 +15,7 @@ Manual, template, validator, AI instruction pack for third-party BotBlocker Secu
 - `examples/acme-botblocker-sample`: canonical v2 sample, normal late-loaded behavior.
 - `examples/acme-traffic-guard`: advanced v2 sample, pre-run `traffic_decision_provider` contract.
 - `examples/acme-hcaptcha`: minimal captcha sample — external CAPTCHA (hCaptcha, mode 90) via `captcha.modes`.
-- `docs/`: `botblocker-runtime-contract.md`, `addon-api-v2.md`, `botblocker-core-object.md`, `botblocker-request-data.md`, `botblocker-settings-reference.md`, `traffic-and-redirect-addons.md`, `core-hook-integration.md`, `tools-page-hooks.md`, `settings-contract.md`, `settings-ui-patterns.md`, `lifecycle-and-features.md`, `code-quality-standard.md`, `packaging-and-upload.md`, `testing.md`, `compatibility-matrix.md`, `known-core-contract-gaps.md`
+- `docs/`: `botblocker-runtime-contract.md`, `addon-api-v2.md`, `abilities.md`, `botblocker-core-object.md`, `botblocker-request-data.md`, `botblocker-settings-reference.md`, `traffic-and-redirect-addons.md`, `core-hook-integration.md`, `tools-page-hooks.md`, `settings-contract.md`, `settings-ui-patterns.md`, `lifecycle-and-features.md`, `code-quality-standard.md`, `packaging-and-upload.md`, `testing.md`, `compatibility-matrix.md`, `known-core-contract-gaps.md`
 - `tools/`: `validate-addon.php`, `package-addon.ps1`
 - `ai/botblocker-addon-skill/SKILL.md`
 
@@ -54,11 +54,12 @@ Use `traffic_decision_provider` only when no normal post-check WordPress hook so
 6. Implement manifest-declared sanitizer.
 7. Visitor/request data → `docs/botblocker-core-object.md` + `docs/botblocker-request-data.md`.
 8. Traffic → `docs/traffic-and-redirect-addons.md`, inspect `examples/acme-traffic-guard`, choose post-check WordPress hooks or the stricter pre-run traffic decision provider contract.
-9. Lifecycle callbacks only when needed.
-10. Validate source folder.
-11. Package.
-12. Validate ZIP.
-13. Upload via BotBlocker admin, run manual tests.
+9. Abilities → `docs/abilities.md`, manifest `abilities`, toggle in `settings.option`.
+10. Lifecycle callbacks only when needed.
+11. Validate source folder.
+12. Package.
+13. Validate ZIP.
+14. Upload via BotBlocker admin, run manual tests.
 
 ## Validate
 

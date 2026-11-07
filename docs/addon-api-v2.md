@@ -10,6 +10,7 @@ Read this document together with:
 - `traffic-and-redirect-addons.md` for traffic managers, redirect managers, and routers.
 - `core-hook-integration.md` for add-ons that require in-cycle BotBlocker decisions.
 - `settings-contract.md` for the exact third-party settings save contract.
+- `abilities.md` for manifest-declared WordPress Abilities (`abilities` key).
 - `settings-ui-patterns.md` for BotBlocker settings tab layout and field markup.
 - `lifecycle-and-features.md` for lifecycle dispatch and feature providers.
 - `code-quality-standard.md` for the required quality bar.
@@ -144,6 +145,7 @@ Always declare these fields in a well-formed v2 manifest. Internally, BotBlocker
 - `runtime.pre_run`: optional strict pre-run contract for in-cycle traffic decision providers.
 - `gateway`: optional gateway configurations for Layer 1 early-init / Layer 2 MU-plugin deployment.
 - `captcha`: optional captcha-mode registration for custom CAPTCHA providers (Turnstile, hCaptcha, ...). See [Captcha modes](#captcha-modes).
+- `abilities`: optional WordPress Abilities API entries. See [Abilities](#abilities).
 - `ui`: optional UI integration metadata for the admin panel and ⌘K command palette.
 - `storage`: optional storage cleanup metadata for uninstall flows.
 - `features`: provider capability names exposed by the active add-on.
@@ -360,6 +362,40 @@ The `storage` field declares storage cleanup metadata for uninstall flows.
 The cache dirs are collected by `BotBlockerAddons::normalizeStorage()` and used by the BotBlocker uninstaller. `storage.cleanup_on_uninstall` is accepted by the normalizer but currently not consumed by the uninstaller — do not rely on it. See `known-core-contract-gaps.md`.
 
 This field is OPTIONAL — only needed when the add-on creates cache directories or requires special cleanup on uninstall.
+
+## Abilities
+
+The optional `abilities` array publishes WordPress Abilities API entries from your manifest. Core owns registration, capability checks, audit logging and the Integrations list; your add-on supplies callables and a toggle key in its own settings option.
+
+```json
+"abilities": [
+  {
+    "name": "botblocker/get-sample-header",
+    "label": "Get sample header",
+    "setting_key": "bbcs_ability_get_sample_header",
+    "definition": "acme_bbcs_sample_ability_definition",
+    "execute": "acme_bbcs_sample_ability_execute",
+    "permission": "acme_bbcs_sample_ability_can_read",
+    "public": true,
+    "pii": false,
+    "risk": "read"
+  }
+]
+```
+
+Rules:
+
+- `name` must match `botblocker/<lowercase-kebab-case>` and be globally unique.
+- `setting_key` must match `bbcs_ability_[a-z0-9_]+` and be unique within the manifest.
+- `definition`, `execute` and the optional `permission` must be safe callables. Class methods (`Class::method`) and functions are accepted.
+- `pii=true` forces `public=false`.
+- `risk` is `read`, `manage` or `danger`; default `read`.
+- The toggle is read from `settings.option` using the `setting_key`. It is not a `BotBlockerSettings` property.
+- A broken entry is dropped, a non-array `abilities` value becomes an empty list, and the add-on stays valid.
+- Callables are checked at registration. A missing callable skips that ability only.
+- Never call `wp_register_ability()` yourself.
+
+A working read-only example is in `examples/acme-botblocker-sample` (`bbcs_ability_get_sample_header`, `acme_bbcs_sample_ability_definition()`, `acme_bbcs_sample_ability_execute()`). Full contract: `abilities.md`.
 
 ## Captcha modes
 

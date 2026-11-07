@@ -83,5 +83,13 @@ $icon_url = function_exists( 'acme_bbcs_sample_asset_url' ) ? acme_bbcs_sample_a
                 <span class="bbcs_label_input_checkbox"><?php esc_html_e( 'Load the sample frontend script for visitors', 'acme-botblocker-sample' ); ?></span>
             </div>
         </div>
+
+        <div class="bbcs_checkbox_input mb-2">
+            <div class="bbcs_label_checkbox_box">
+                <input type="hidden" name="acme_bbcs_sample_settings[ability_enabled]" value="0">
+                <input type="checkbox" name="acme_bbcs_sample_settings[ability_enabled]" value="1" <?php checked( ! empty( $settings['ability_enabled'] ) ); ?>>
+                <span class="bbcs_label_input_checkbox"><?php esc_html_e( 'Expose botblocker/get-sample-header in WP Abilities API', 'acme-botblocker-sample' ); ?></span>
+            </div>
+        </div>
     </div>
 </div>

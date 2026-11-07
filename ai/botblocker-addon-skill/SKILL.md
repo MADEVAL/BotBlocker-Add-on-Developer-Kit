@@ -94,6 +94,7 @@ steps.
 | Lifecycle callbacks, `$addon`/`$context`, features, `BotBlockerAddons` API | `docs/lifecycle-and-features.md` |
 | Settings save/read contract and option array | `docs/settings-contract.md` |
 | Settings tab layout, field wrappers, markup | `docs/settings-ui-patterns.md` |
+| Add-on abilities (`abilities` manifest key) | `docs/abilities.md` |
 | Reading the live BotBlocker object safely | `docs/botblocker-core-object.md` |
 | Available visitor/request/decision fields | `docs/botblocker-request-data.md` |
 | Read-only core settings for decisions | `docs/botblocker-settings-reference.md` |
@@ -127,8 +128,10 @@ when in-cycle decisions are truly required).
   `name`, `version`, `requires_core`, and an existing `core` file. Always also
   declare `schema: "2.0"`, `requires_php`, `description`, `main`, `assets.icon`,
   and `assets.readme`.
-- **Settings field naming** (`docs/settings-contract.md`) - third-party v2 must
-  use the option array; plain names only work for BotBlocker's built-in core logic:
+- **Abilities** (`docs/abilities.md`): use the manifest `abilities` array. Core
+  registers, capability-checks and audits; never call `wp_register_ability()`.
+  The toggle key lives in your `settings.option`, not in core settings.
+- **Settings field naming** (`docs/settings-contract.md`) - third-party v2 must  use the option array; plain names only work for BotBlocker's built-in core logic:
 
   ```php
   <input type="hidden"   name="vendor_addon_settings[enabled]" value="0">

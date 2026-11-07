@@ -405,9 +405,71 @@ function bbcs_validator_validate_folder(string $root, array &$errors, array &$wa
         }
     }
 
+    $abilities = is_array($manifest['abilities'] ?? null) ? $manifest['abilities'] : array();
+    if (isset($manifest['abilities']) && !is_array($manifest['abilities'])) {
+        bbcs_validator_error($errors, 'abilities must be an array; core drops the whole key and the add-on stays valid, but the declared abilities will not register.');
+    }
+    $seen_ability_names = array();
+    $seen_ability_keys  = array();
+    foreach ($abilities as $ability_index => $ability) {
+        $ability_label = 'abilities[' . $ability_index . ']';
+        if (!is_array($ability)) {
+            bbcs_validator_error($errors, $ability_label . ' must be an object.');
+            continue;
+        }
+
+        foreach (array('name', 'setting_key', 'definition', 'execute') as $ability_field) {
+            if (!isset($ability[$ability_field]) || trim((string) $ability[$ability_field]) === '') {
+                bbcs_validator_error($errors, $ability_label . '.' . $ability_field . ' is required.');
+            }
+        }
+
+        $ability_name = isset($ability['name']) ? trim((string) $ability['name']) : '';
+        if ($ability_name === '' || !preg_match('/^botblocker\/[a-z0-9][a-z0-9-]*$/', $ability_name)) {
+            bbcs_validator_error($errors, $ability_label . '.name must match botblocker/<lowercase-kebab-case>.');
+        } elseif (isset($seen_ability_names[$ability_name])) {
+            bbcs_validator_error($errors, $ability_label . '.name is declared more than once: ' . $ability_name);
+        } else {
+            $seen_ability_names[$ability_name] = true;
+        }
+
+        $ability_key = isset($ability['setting_key']) ? trim((string) $ability['setting_key']) : '';
+        if ($ability_key === '' || !preg_match('/^bbcs_ability_[a-z0-9_]+$/', $ability_key)) {
+            bbcs_validator_error($errors, $ability_label . '.setting_key must match bbcs_ability_[a-z0-9_]+.');
+        } elseif (isset($seen_ability_keys[$ability_key])) {
+            bbcs_validator_error($errors, $ability_label . '.setting_key is declared more than once: ' . $ability_key);
+        } else {
+            $seen_ability_keys[$ability_key] = true;
+        }
+
+        foreach (array('definition', 'execute', 'permission') as $ability_callback_field) {
+            if ($ability_callback_field === 'permission' && !isset($ability[$ability_callback_field])) {
+                continue;
+            }
+            $callback = bbcs_validator_safe_callable_name((string) ($ability[$ability_callback_field] ?? ''));
+            if ($callback === '') {
+                bbcs_validator_error($errors, $ability_label . '.' . $ability_callback_field . ' must be a safe callable name.');
+            } elseif (strpos($callback, '::') === false && !isset($functions[$callback])) {
+                bbcs_validator_error($errors, $ability_label . '.' . $ability_callback_field . ' not found in PHP files: ' . $callback);
+            }
+        }
+
+        if (isset($ability['risk']) && !in_array((string) $ability['risk'], array('read', 'manage', 'danger'), true)) {
+            bbcs_validator_error($errors, $ability_label . '.risk must be read, manage, or danger.');
+        }
+        if (isset($ability['pii']) && !is_bool($ability['pii'])) {
+            bbcs_validator_error($errors, $ability_label . '.pii must be a boolean.');
+        }
+        if (isset($ability['public']) && !is_bool($ability['public'])) {
+            bbcs_validator_error($errors, $ability_label . '.public must be a boolean.');
+        }
+        if (!empty($ability['pii']) && !empty($ability['public'])) {
+            bbcs_validator_warning($warnings, $ability_label . ' sets pii=true and public=true; core forces public=false at registration.');
+        }
+    }
+
     $runtime = is_array($manifest['runtime'] ?? null) ? $manifest['runtime'] : array();
-    $pre_run = is_array($runtime['pre_run'] ?? null) ? $runtime['pre_run'] : array();
-    $has_traffic_provider = in_array('traffic_decision_provider', $features, true);
+    $pre_run = is_array($runtime['pre_run'] ?? null) ? $runtime['pre_run'] : array();    $has_traffic_provider = in_array('traffic_decision_provider', $features, true);
     $has_pre_run          = !empty($pre_run);
 
     if ($has_traffic_provider) {

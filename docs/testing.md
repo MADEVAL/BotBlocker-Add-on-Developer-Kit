@@ -25,6 +25,7 @@ Expected:
 - required paths exist
 - PHP files have no syntax errors
 - settings fields use `settings.option[field]`
+- ability entries use valid `botblocker/...` names, `bbcs_ability_...` keys and safe callables
 - assets use `BotBlockerAddons::fileUrl()`
 - no `plugin_dir_url()` usage in add-on code
 

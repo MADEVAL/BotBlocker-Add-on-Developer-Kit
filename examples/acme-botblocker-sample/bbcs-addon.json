@@ -22,6 +22,19 @@
   "features": [
     "sample_response_header"
   ],
+  "abilities": [
+    {
+      "name": "botblocker/get-sample-header",
+      "label": "Get sample header",
+      "setting_key": "bbcs_ability_get_sample_header",
+      "definition": "acme_bbcs_sample_ability_definition",
+      "execute": "acme_bbcs_sample_ability_execute",
+      "permission": "acme_bbcs_sample_ability_can_read",
+      "public": true,
+      "pii": false,
+      "risk": "read"
+    }
+  ],
   "assets": {
     "icon": "assets/icon.svg",
     "readme": "readme.txt"

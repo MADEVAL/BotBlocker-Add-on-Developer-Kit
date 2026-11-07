@@ -14,6 +14,7 @@ function acme_bbcs_sample_defaults(): array {
         'admin_notice' => 1,
         'admin_script' => 1,
         'frontend_script' => 1,
+        'ability_enabled' => 0,
     );
 }
 
@@ -47,6 +48,7 @@ function acme_bbcs_sample_sanitize_settings( $raw ): array {
         'admin_notice'    => ! empty( $raw['admin_notice'] ) ? 1 : 0,
         'admin_script'    => ! empty( $raw['admin_script'] ) ? 1 : 0,
         'frontend_script' => ! empty( $raw['frontend_script'] ) ? 1 : 0,
+        'ability_enabled' => ! empty( $raw['ability_enabled'] ) ? 1 : 0,
     );
 }
 
@@ -157,6 +159,41 @@ function acme_bbcs_sample_enqueue_frontend_assets(): void {
         ) . ';',
         'before'
     );
+}
+
+function acme_bbcs_sample_ability_definition(): array {
+    return array(
+        'label'         => __( 'Get sample header', 'acme-botblocker-sample' ),
+        'description'   => __( 'Returns the response header configured by the sample add-on.', 'acme-botblocker-sample' ),
+        'annotations'   => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+        'input_schema'  => array( 'type' => 'object', 'default' => array(), 'properties' => array(), 'additionalProperties' => false ),
+        'output_schema' => array(
+            'type'       => 'object',
+            'properties' => array(
+                'header_name'  => array( 'type' => 'string' ),
+                'header_value' => array( 'type' => 'string' ),
+                'enabled'      => array( 'type' => 'boolean' ),
+            ),
+            'required'   => array( 'header_name', 'header_value', 'enabled' ),
+            'additionalProperties' => false,
+        ),
+    );
+}
+
+function acme_bbcs_sample_ability_execute( $input = null ) {
+    unset( $input );
+    $settings = acme_bbcs_sample_settings();
+
+    return array(
+        'header_name'  => (string) $settings['header_name'],
+        'header_value' => (string) $settings['header_value'],
+        'enabled'      => ! empty( $settings['enabled'] ),
+    );
+}
+
+function acme_bbcs_sample_ability_can_read( $ability_name = '' ): bool {
+    unset( $ability_name );
+    return current_user_can( 'manage_options' );
 }
 
 function acme_bbcs_sample_boot(): void {
