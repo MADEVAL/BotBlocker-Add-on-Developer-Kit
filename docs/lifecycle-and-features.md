@@ -51,6 +51,14 @@ call_user_func( $callback, $addon, $context, $event, $slug );
 
 Lifecycle callbacks must be safe to run more than once.
 
+### File operations
+
+A `load` or `activate` callback may delete or create files, but it must not assume the operation succeeds. Check the result, keep the site working when the filesystem is read-only, and report the failure in the add-on settings page instead of throwing.
+
+When an add-on manages a shared file such as `wp-content/.htaccess`, use a delimited block with unique start and end markers. Add, replace and remove only the text between the markers; never rewrite the rest of the file. Removal must be idempotent and must leave the file valid when no block is present.
+
+Static files served by the web server never reach PHP. An add-on can delete them, rename them, or protect them with a server rule, but a WordPress hook cannot block a request for an existing static file. Say so in the settings page when the host's server ignores the rule (for example nginx and `.htaccess`), and show the server configuration the owner must add.
+
 ### Load and health_check ordering
 
 On every front-end and admin request, `BotBlockerAddons::includeAll()` performs two passes:

@@ -103,6 +103,35 @@ Rules:
 - Never return secrets, license keys, passwords or recovery codes.
 - PII outputs (`pii=true`) are masked by default and cannot unmask for `risk=read`.
 
+## Destructive ability contract
+
+A writable ability must be explicit about risk. It needs `risk` set to `manage` or `danger`, `public: true` in the manifest entry (a destructive ability is hidden from MCP without that flag), and an `annotations` block with `readonly=false`, `destructive=true`.
+
+Use the core guard and a string confirmation token, never a boolean:
+
+```php
+public static function executeSetDomains( $input = null ) {
+    $guard = bbcs_wp_ability_guard( 'botblocker/set-security-headers-domains', $input, 'DOMAINS', true );
+    if ( is_wp_error( $guard ) ) {
+        return $guard;
+    }
+    // validate input, compute the diff, write only when dry_run is false
+}
+```
+
+`bbcs_wp_ability_guard()` applies the capability check, the confirmation token and the rate limiter. The string token is case-insensitive after trimming; `confirm: true` does not match. Add `dry_run` to the input schema and return `applied => false` when it is set.
+
+Validation rules for a setter:
+
+- validate every item before writing; one invalid item means no write at all;
+- return `ability_invalid_input` with the index and the original value in the message;
+- enforce the documented list limit;
+- preserve every option key you do not own;
+- read and write through `BotBlockerMultisite::getOption()` / `updateOption()`, then run the result through the add-on sanitizer;
+- if a request-scoped cache exists in another class, reset it after a successful write.
+
+Dry run still computes and returns `changed`, `previous`, `current`, `added` and `removed`, so a caller can inspect the result before writing.
+
 ## Permission callback
 
 ```php
