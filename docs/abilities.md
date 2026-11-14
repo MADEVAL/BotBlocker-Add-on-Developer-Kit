@@ -97,6 +97,7 @@ function acme_bbcs_sample_ability_execute( $input = null ) {
 Rules:
 
 - Return the declared output shape, or `WP_Error` with a stable code.
+- A `WP_Error` is mapped to an HTTP status before it reaches the client: `400` for invalid input, `404` for a missing object, `409` for a state conflict, `429` for a rate limit and `503` when a required service is unavailable. Use those codes deliberately; the core `500` fallback is not the contract. A site can change the map with the `bbcs_ability_error_status` filter (`$status`, `$code`).
 - Do not call `wp_register_ability()`.
 - Do not write to the database for `risk=read`.
 - For `manage` / `danger`, accept `confirm` and `dry_run`, and make `dry_run` change nothing.

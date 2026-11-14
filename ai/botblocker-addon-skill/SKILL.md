@@ -130,7 +130,10 @@ when in-cycle decisions are truly required).
   and `assets.readme`.
 - **Abilities** (`docs/abilities.md`): use the manifest `abilities` array. Core
   registers, capability-checks and audits; never call `wp_register_ability()`.
-  The toggle key lives in your `settings.option`, not in core settings.
+  The toggle key lives in your `settings.option`, not in core settings. Return
+  `WP_Error` with a stable code: core maps it to 400/404/409/429/503 (the
+  `bbcs_ability_error_status` filter can change the map), and a destructive
+  ability needs `confirm` plus `dry_run`.
 - **Settings field naming** (`docs/settings-contract.md`) - third-party v2 must  use the option array; plain names only work for BotBlocker's built-in core logic:
 
   ```php
